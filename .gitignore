@@ -1,0 +1,10 @@
+# IDE
+.idea
+
+# Python
+venv
+__pycache__
+
+# Project
+my.db
+.env
