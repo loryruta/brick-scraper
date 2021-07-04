@@ -36,18 +36,32 @@ def get_subsets(item_type, item_no):
     return _make_request("get", f"items/{item_type}/{item_no}/subsets", {})
 
 
-def get_order_items(order_id):
+def _get_order_items(order_id):
     return _make_request("get", f"orders/{order_id}/items", {})
+
+
+def _parse_order_item(order_item):
+    return order_item | {
+        'item': {
+            'ids': [order_item['item']['no']],
+        },
+        'condition': order_item['new_or_used']
+    }
 
 
 class Order(lego_reseller.Order):
     def __init__(self, data):
+        self.platform = "bricklink"
+
         self.order_id = data['order_id']
         self.buyer_name = data['buyer_name']
         self.date_ordered = data['date_ordered']
 
     def get_items(self):
-        return get_order_items(self.order_id)[0]
+        return [
+            _parse_order_item(order_item)
+            for order_item in _get_order_items(self.order_id)[0]
+        ]
 
 
 def get_orders(direction=None, status=None, filed=None):

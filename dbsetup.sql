@@ -11,18 +11,6 @@ CREATE TABLE IF NOT EXISTS "colors"
     PRIMARY KEY ("id")
 );
 
--- ------------------------------------------------------------------------------------------------ items
-
-CREATE TABLE IF NOT EXISTS "items"
-(
-    "no"            VARCHAR(256) NOT NULL,
-    "type"          VARCHAR(32) NOT NULL,
-    "name"          VARCHAR(2048),
-    "id_category"   INT NOT NULL,
-
-    PRIMARY KEY ("no", "type")
-);
-
 -- ------------------------------------------------------------------------------------------------ inventories
 
 CREATE TABLE IF NOT EXISTS "inventories" (
@@ -35,29 +23,60 @@ INSERT OR IGNORE INTO "inventories"("id") VALUES (0);
 
 -- ------------------------------------------------------------------------------------------------ inventory_entries
 
-CREATE TABLE IF NOT EXISTS "inventory_entries"
-(
-    "id_inventory" INT NOT NULL,
-    "item_type" VARCHAR(32) NOT NULL, -- Item
-    "item_no" VARCHAR(256) NOT NULL,
-    "id_color" INT NOT NULL,
-    "quantity" INT NOT NULL,
+-- This table describes an item within a certain inventory (an inventory entry).
+-- Additionally to item's fields, it has a color, a condition and a private note
 
-    PRIMARY KEY ("id_inventory", "item_type", "item_no", "id_color"),
-    FOREIGN KEY ("id_inventory") REFERENCES "inventories"("id"),
-    FOREIGN KEY ("item_no", "item_type") REFERENCES "items"("no", "type"),
-    FOREIGN KEY ("id_color") REFERENCES "colors"("id")
-);
-
--- ------------------------------------------------------------------------------------------------ inventory_pulled_orders
-
-CREATE TABLE IF NOT EXISTS "inventory_pulled_orders"
+create table if not exists "inventory_entries"
 (
     "id_inventory" int not null,
+
+    "item_bl_id" varchar(256) not null,
+    "color_bl_id" int not null,
+    "condition" character(1) not null, -- U or N
+    "keyword" varchar(255) not null,
+
+    "available_quantity" int not null default 0,
+
+    primary key ("id_inventory", "item_bl_id", "color_bl_id", "condition", "keyword"),
+    foreign key ("id_inventory") references "inventories"("id") on delete cascade
+);
+
+-- ------------------------------------------------------------------------------------------------ orders
+
+create table if not exists "orders"
+(
+    "id" integer primary key,
     "buyer_name" varchar(256) not null,
     "date_ordered" timestamp not null,
+    "platform" varchar(256) not null,
 
-    primary key ("id_inventory", "buyer_name", "date_ordered"),
-    foreign key ("id_inventory") references "inventories"("id")
-)
+    unique ("buyer_name", "date_ordered")
+);
 
+-- ------------------------------------------------------------------------------------------------ order_items
+
+create table if not exists "order_items"
+(
+    "id_order" int not null,
+
+    "item_group_id" int not null,
+    "item_id" varchar(256) not null,
+    "color_bl_id" int not null,
+    "condition" character(1) not null,
+    "keyword" varchar(255) not null,
+
+    "purchased_quantity" unsigned int not null default 0,
+
+    primary key ("id_order", "item_group_id", "item_id", "color_bl_id", "condition", "keyword"),
+    foreign key ("id_order") references "orders"("id") on delete cascade
+);
+
+create table if not exists "inventory_applied_orders"
+(
+    "id_inventory" int not null,
+    "id_order" int not null,
+
+    primary key ("id_inventory", "id_order"),
+    foreign key ("id_inventory") references "inventories"("id"),
+    foreign key ("id_order") references "orders"("id")
+);

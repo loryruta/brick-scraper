@@ -39,22 +39,25 @@ colors = _get_colors()
 
 
 def _parse_order_item(order_item):
-    item_no = None
+    item_ids = []
     for _id in order_item['ids']:
         if _id['type'] == 'design_id':
-            item_no = _id['id']
+            item_ids.append(_id['id'])
 
-    if item_no is None:
-        print(f"Couldn't find item_no for: {order_item['name']} ({order_item['type']})")
+    if len(item_ids) == 0:  # TODO MINIFIGS!
+        #print(f"Couldn't find item_no for: {order_item['name']} ({order_item['type']})")
         return None
 
     return {
         'item': {
-            'no': item_no,
-            'type': order_item['type'].upper()
+            'ids': item_ids,
+            'type': order_item['type'].upper(),
+            'name': order_item['name']
         },
         'quantity': int(order_item['ordered_quantity']),
-        'color_id': int(colors[order_item['color_id']]['bl_ids'][0])
+        'color_id': int(colors[order_item['color_id']]['bl_ids'][0]),
+        'condition': order_item['condition'][0],  # Just get the first character (N or U)
+        'remarks': order_item['personal_note']
     }
 
 
@@ -71,6 +74,8 @@ def _parse_order_view(order_view):
 
 class Order(lego_reseller.Order):
     def __init__(self, order_id):
+        self.platform = "brickowl"
+
         self.order_id = order_id
         self.data = _parse_order_view(_get_order_view(order_id))
 
