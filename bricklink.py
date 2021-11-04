@@ -6,6 +6,10 @@ import os
 import lego_reseller
 
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 def _make_request(method, path, params):
     auth = OAuth1(
         os.environ['BRICKLINK_CONSUMER_KEY'],
@@ -32,6 +36,10 @@ def get_colors():
     return _make_request("get", "colors", {})
 
 
+def get_item(item_type, item_no):
+    return _make_request("get", f"items/{item_type.lower()}/{item_no}", {})
+
+
 def get_subsets(item_type, item_no):
     return _make_request("get", f"items/{item_type}/{item_no}/subsets", {})
 
@@ -49,12 +57,52 @@ def _parse_order_item(order_item):
     }
 
 
-class Order(lego_reseller.Order):
-    def __init__(self, data):
-        self.platform = "bricklink"
+# ------------------------------------------------------------------------------------------------
 
+
+class Item(lego_reseller.Item):
+    platform = "BRICKLINK"
+
+    def __init__(self, data):
+        self.bl_id = data['no']
+        self.bl_alt_id = data['alternate_no']
+        self.name = data['name']
+        self.type = data['type']
+        self.category_id = data['category_id']
+        self.image_url = data['image_url']
+        self.thumbnail_url = data['thumbnail_url']
+        self.weight = data['weight']
+        self.dim_x = data['dim_x']
+        self.dim_y = data['dim_y']
+        self.dim_z = data['dim_z']
+        self.description = data['description']
+        self.year_released = data['year_released']
+
+
+class OrderItem(lego_reseller.OrderItem):
+    platform = "BRICKLINK"
+
+    def __init__(self, data):
+        self.item_ids = [data['item']['no']]
+        self.item_type = data['item']['type']
+        self.color_bl_id = data['color_bl_id']
+        self.condition = data['new_or_used']
+        self.personal_note = data['remarks']
+        self.quantity = data['quantity']
+
+    def get_item(self):
+        return Item(
+            get_item(self.item_type, self.item_ids[0])
+        )
+
+
+class Order(lego_reseller.Order):
+    platform = "BRICKLINK"
+
+    def __init__(self, data):
         self.order_id = data['order_id']
         self.buyer_name = data['buyer_name']
+        #self.buyer_email = data['buyer_email']
         self.date_ordered = data['date_ordered']
 
     def get_items(self):

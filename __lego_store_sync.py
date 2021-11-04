@@ -1,5 +1,4 @@
 import sqlite3
-from dotenv import load_dotenv
 import sys
 import datetime
 from dateutil import parser
@@ -21,10 +20,11 @@ class bcolors:
 # -----
 
 
+from dotenv import load_dotenv
 load_dotenv()
 
 
-import lego_reseller_manager
+import api_layer
 import bricklink
 
 
@@ -40,13 +40,6 @@ def clear_inventory(inv_id=0):
     con.execute('''
         delete from "inventory_entries" where "id_inventory" = ?
     ''', (inv_id,))
-
-
-def get_inventory(inv_id=0):
-    con.execute('''
-        
-    ''')
-    pass
 
 
 def clear_orders(inv_id=0):
@@ -135,7 +128,7 @@ def upload_item_subsets(item_type, item_no, inv_id=0, set_condition='N', set_key
 def pull_shipped_orders(inv_id=0):
     con.execute("begin transaction;")
 
-    orders = lego_reseller_manager.get_orders()
+    orders = api_layer.get_orders()
 
     for order in orders:
         cur = con.execute('''

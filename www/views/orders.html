@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block body %}
+<table>
+    <tr>
+        <th>#</th>
+        <th>Buyer name</th>
+        <th>Buyer email</th>
+        <th>Date ordered</th>
+        <th>Actions</th>
+    </tr>
+    {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.buyer_name }}</td>
+            <td>{{ order.buyer_email }}</td>
+            <td>{{ order.date_ordered }}</td>
+            <td>0</td>
+        </tr>
+    {% end %}
+</table>
+
+<div>
+   <form action="/orders/clear" method="post">
+        <input type="submit" value="Clear">
+    </form>
+    <form action="/orders/pull" method="post">
+        <input type="submit" value="Pull">
+    </form>
+</div>
+
+{% end %}
