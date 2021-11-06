@@ -2,8 +2,6 @@ import requests
 import json
 import os
 
-import lego_reseller
-
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -50,9 +48,15 @@ def _parse_order_view(order_view):
     }
 
 
+def does_part_exist(part_num):
+    # todo
+    return True
+
+
 # ------------------------------------------------------------------------------------------------
 
 
+"""
 class OrderItem(lego_reseller.OrderItem):
     platform = "BRICKOWL"
 
@@ -115,3 +119,4 @@ def get_orders():
 
 if __name__ == "__main__":
     print(get_orders())
+"""

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<table border="1">
+<thead>
+    <tr>
+        <th>Part image</th>
+        <th>Part ID</th>
+        <th>Part name</th>
+        <th>Color</th>
+        <th>Condition</th>
+        <th>Quantity</th>
+        <th>Parted out set</th>
+    </tr>
+</thead>
+<tbody>
+    {% for inv_part in inv_parts %}
+        <tr>
+            <td><img src="{{ inv_part.part.part_img_url }}" style="max-width: 500px; height: 70px"></td>
+            <th>{{ inv_part.part.id }}</th>
+            <td>{{ inv_part.part.name }}</td>
+            <td>{{ inv_part.color.name }}</td>
+            <td>{{ inv_part.condition }}</td>
+            <td>{{ inv_part.quantity }}</td>
+            <td>{{ inv_part.parted_out_set.id }}</td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+{% endblock %}

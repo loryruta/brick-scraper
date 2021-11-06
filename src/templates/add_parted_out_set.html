@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>Add parted out set</h3>
+
+<form method='POST' action='{{ url_for("inventory.add_parted_out_set") }}'>
+    <div>
+        <label>Set number</label><br>
+        <input type='text' name='set_id'>
+    </div>
+    <div>
+        <label>Condition</label><br>
+        <select name='condition'>
+            <option value='N'>N</option>
+            <option value='U'>U</option>
+        </select>
+    </div>
+    <div>
+        <button type='submit'>
+            Submit
+        </button>
+    </div>
+</form>
+
+{% endblock %}
