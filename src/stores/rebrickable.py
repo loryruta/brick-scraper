@@ -95,6 +95,10 @@ def get_colors() -> Color:
     return _issue_multipage_request("GET", f'lego/colors', {})
 
 
+def get_part(part_num: str) -> Part:
+    return _issue_request("GET", f'lego/parts/{part_num}', {})
+
+
 def get_set(set_num: str) -> Set:
     return _issue_request("GET", f'lego/sets/{set_num}/', {})
 

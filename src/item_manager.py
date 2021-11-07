@@ -14,38 +14,6 @@ class InvalidOperation(Exception):
     pass
 
 
-async def init_colors(session):
-    print("Pulling colors...")
-
-    for color in rebrickable.get_colors():
-        color_id = color['id']
-        color_name = color['name']
-        external_ids = color['external_ids']
-
-        bricklink_id = None
-        if 'BrickLink' in external_ids:
-            bricklink_id = external_ids['BrickLink']['ext_ids'][0]
-
-        brickowl_id = None
-        if 'BrickOwl' in external_ids:
-            brickowl_id = external_ids['BrickOwl']['ext_ids'][0]
-
-        values = {
-            'name': color_name,
-            'rgb': color['rgb'],
-            'id_bricklink': bricklink_id,
-            'id_brickowl': brickowl_id,
-        }
-
-        session.execute(
-            insert(Color)
-                .values(id=color_id, **values)
-                .on_conflict_do_update(index_elements=['id'], set_=values)
-        )
-        
-        print(f"Color #{color_id}: {color_name} (Bricklink: {bricklink_id}, Brickowl: {brickowl_id})")
-
-
 async def add_part(session, part: rebrickable.Part) -> Part:
     part_num = part['part_num']
 
@@ -121,13 +89,13 @@ async def part_out_to_inventory(user_id: int, set_id: str, condition: str):
     parts = list(rebrickable.get_set_parts(set_id))
 
     with Session.begin() as session:
-        # Cache the parts found in the set
+        # Caches the parts found in the set.
         await asyncio.gather(*[add_part(session, part['part']) for part in parts])
 
-        # Cache the set information
+        # Caches the set information.
         await add_set(session, rebrickable.get_set(set_id))
 
-        # Register the parted out set for the user
+        # Registers that the user has parted out the set.
         parted_out_set_id = session \
                 .execute(
                     insert(PartedOutSet)
@@ -136,17 +104,8 @@ async def part_out_to_inventory(user_id: int, set_id: str, condition: str):
                 ) \
                 .first()[0]
 
-        # Add the parts to the user's inventory
+        # Adds the parts to the user's inventory.
         await asyncio.gather(*[
             add_part_to_inventory(session, user_id, part, condition, parted_out_set_id)
             for part in parts
         ])
-
-    session.commit()
-
-
-# Main
-
-if 'PULL_COLORS' in os.environ and os.environ['PULL_COLORS']:
-    with Session.begin() as session:
-        asyncio.run(init_colors(session))
