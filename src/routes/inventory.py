@@ -30,7 +30,7 @@ async def parts():
 
 @blueprint.route('/parted_out_sets/add', methods=['GET', 'POST'])
 @auth_request
-async def add_parted_out_set():
+def add_parted_out_set():
     # GET
     if request.method == "GET":
         return render_template('add_parted_out_set.html')
@@ -40,7 +40,7 @@ async def add_parted_out_set():
         set_id = request.form.get('set_id')
         condition = request.form.get('condition')
         try:
-            await item_manager.part_out_set_to_inventory(g.user_id, set_id, condition)
+            item_manager.part_out_set_to_inventory(g.user_id, set_id, condition)
             return redirect(url_for('inventory.parted_out_sets'))
         except RuntimeError as e:
             # flash
@@ -54,5 +54,4 @@ async def parted_out_sets():
         with Session.begin() as session:
             parted_out_sets = session.query(models.PartedOutSet).filter_by(id_user=g.user_id).all()
             return render_template('parted_out_sets.html', parted_out_sets=parted_out_sets)
-
 

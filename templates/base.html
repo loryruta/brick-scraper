@@ -1,12 +1,21 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="/public/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="/public/js/bootstrap.min.js"></script>
+
     <title>BRICKSY</title>
 </head>
 <body>
+<div class="container-fluid">
     <h1>BRICKSY</h1>
     <div>
         {% block content %}{% endblock %}
     </div>
+</div>
 </body>
 </html>

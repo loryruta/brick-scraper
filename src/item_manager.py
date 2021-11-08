@@ -3,7 +3,7 @@ from requests_oauthlib import OAuth1
 import json
 import os
 import sqlalchemy
-from models import Part, InventoryPart, PartedOutSet, Set
+from models import AppliedOrder, Order, Part, InventoryPart, PartedOutSet, Set, User
 from db import Session
 from stores import bricklink
 from sqlalchemy.dialects.postgresql import insert
@@ -14,14 +14,11 @@ class InvalidOperation(Exception):
     pass
 
 
-async def part_out_set_to_inventory(user_id: int, set_id: str, condition: str):
+def part_out_set_to_inventory(user_id: int, set_id: str, condition: str):
     matches = bricklink.get_subsets('SET', set_id)
 
     with Session.begin() as session:
-        inventory_log = PartedOutSet(
-            id_user=user_id,
-            id_set=set_id
-        )
+        inventory_log = PartedOutSet(id_user=user_id, id_set=set_id)
         session.add(inventory_log)
 
         for match in matches:
@@ -54,3 +51,6 @@ async def part_out_set_to_inventory(user_id: int, set_id: str, condition: str):
                     )
                 #print(f"WARNING: Part \"{item_name}\" (#{item_no}) - Color: #{subset_entry['color_id']}")
 
+
+def apply_order(user: User, order: Order):
+    pass

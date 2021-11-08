@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table class="table table-sm">
+<thead>
+    <tr>
+        <th>Order ID</th>
+        <th>Buyer name</th>
+        <th>Ordered at</th>
+        <th>Status</th>
+        <th>Parts ordered</th>
+        <th>Bricklink ID</th>
+        <th>Brickowl ID</th>
+        <th>Applied</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+<tbody>
+    {% for order in orders %}
+        <tr>
+            <th>{{ order.id }}</th>
+            <td>{{ order.buyer_name }}</td>
+            <td>{{ order.date_ordered }}</td>
+            <td>{{ order.status.name }}</td>
+            <td>{{ order.parts|length }}</td>
+            <td> <!-- Bricklink ID -->
+                {% if order.id_bricklink %}
+                    <a href="https://www.bricklink.com/orderDetail.asp?ID={{ order.id_bricklink }}" target="_blank">{{ order.id_bricklink }}</a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td> <!-- Brickowl ID -->
+                {% if order.id_brickowl %}
+                    <a href="https://www.brickowl.com/mystore/orders/history/{{ order.id_brickowl }}" target="_blank">{{ order.id_brickowl }}</a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ "Yes" if order.applied_order else "No" }}</td>
+            <td>
+                <a class="btn btn-sm" href="/orders/{{ order.id }}/parts">Items</a>
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<table border="1">
+<table class="table table-sm">
 <thead>
     <tr>
         <th>Part image</th>
@@ -17,7 +17,7 @@
 <tbody>
     {% for inv_part in inv_parts %}
         <tr>
-            <td><img src="{{ inv_part|get_part_image_url }}" style="max-width: 500px; height: 70px"></td>
+            <td><img src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}" style="max-width: 500px; height: 70px"></td>
             <th>{{ inv_part.part.id }}</th>
             <td>{{ inv_part.part.name }}</td>
             <td>{{ inv_part.color.name }}</td>

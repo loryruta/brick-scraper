@@ -10,5 +10,7 @@ my.db
 cache.db
 .env
 
+node_modules
+
 tmp
 storage

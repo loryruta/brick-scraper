@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table class="table table-sm">
+<thead>
+    <tr>
+        <!--<th>ID</th>-->
+        <th>Part image</th>
+        <th>Part name</th>
+        <th>Color name</th>
+        <th>Color type</th>
+        <th>Condition</th>
+        <th>Quantity</th>
+        <th>Personal notes</th>
+        <th>Public notes</th>
+    </tr>
+</thead>
+<tbody>
+    {% for order_part in order_parts %}
+        <tr>
+            <th><img src="{{ get_part_image_url(order_part.id_color, order_part.id_part) }}" style="max-width: 500px; height: 70px"></th>
+            <td>{{ order_part.part.name }}</td>
+            <td>{{ order_part.color.name }}</td>
+            <td>{{ order_part.color.type }}</td>
+            <td>{{ order_part.condition }}</td>
+            <td>{{ order_part.quantity }}</td>
+            <td>{{ order_part.user_remarks }}</td>
+            <td>{{ order_part.user_description }}</td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+{% endblock %}
