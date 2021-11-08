@@ -1,35 +1,51 @@
-import api_layer as api
-import cache_layer as cache
+import sys
 
 
-def clear_orders():
-    cache.Order.delete()
+sys.path.append('src')
 
 
-def pull_orders():
-    orders = api.get_orders()
-    for order in orders:
-        order_id = cache.Order.create(
-            buyer_name=order.buyer_name,
-            buyer_email=None,
-            date_ordered=order.date_ordered
-        )
-
-        print(order_id)
-        exit(1)
-
-        if order_id is not None:
-            items = [
-                cache.OrderItem(order_id=order_id, **item.__dict__)
-                for item in order.get_items()
-            ]
-            cache.OrderItem.bulk_create(items)
+from dotenv import load_dotenv
 
 
-def get_orders():
-    return cache.Order.select()
+load_dotenv()
 
 
-if __name__ == "__main__":
-    clear_orders()
-    pull_orders()
+import os
+from flask import Flask, send_from_directory
+
+
+app = Flask(__name__, static_folder='/')
+app.secret_key = os.environ['APP_SECRET_KEY']
+
+
+from routes.auth import auth_request, blueprint as auth_blueprint
+from routes.cache import blueprint as cache_blueprint
+from routes.inventory import blueprint as inventory_blueprint
+from models import InventoryPart, Part
+import image_handler
+
+
+@app.route('/', methods=['GET'])
+@auth_request
+def home():
+      return "Hello world! It's working!"
+
+
+@app.route('/storage/<path:path>')
+def storage(path: str):
+      return send_from_directory('storage', path)
+
+
+app.register_blueprint(auth_blueprint)
+app.register_blueprint(cache_blueprint)
+app.register_blueprint(inventory_blueprint)
+
+
+@app.template_filter()
+def get_part_image_url(part: InventoryPart):
+    return image_handler.get_part_image_url(part)
+
+
+if __name__ == '__main__':
+      app.run(port=5000)
+

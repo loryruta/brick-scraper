@@ -36,10 +36,6 @@ def get_colors():
     return _make_request("GET", "colors", {})
 
 
-def get_item(item_type, item_no):
-    return _make_request("GET", f"items/{item_type.lower()}/{item_no}", {})
-
-
 def get_orders():
     return _make_request("GET", "orders", {})
 
@@ -53,5 +49,5 @@ def get_order(order_id: str):
     return _make_request("GET", f"orders/{order_id}", {})
 
 
-def does_part_exist(part_num):
-    return True
+def get_subsets(item_type: str, item_no: str):
+    return _make_request('GET', f"items/{item_type}/{item_no}/subsets", {})

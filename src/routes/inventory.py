@@ -1,7 +1,7 @@
-from flask import request, Blueprint, redirect, url_for, render_template, flash, g
+from flask import request, Blueprint, redirect, url_for, render_template, flash, g, current_app
 import sqlalchemy
 from db import Session
-from models import InventoryPart, User
+from models import InventoryPart, User, Part
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 import bcrypt
@@ -15,6 +15,7 @@ import models
 
 
 blueprint = Blueprint('inventory', __name__)
+
 
 @blueprint.route('/inventory/parts', methods=['GET'])
 @auth_request
@@ -39,7 +40,7 @@ async def add_parted_out_set():
         set_id = request.form.get('set_id')
         condition = request.form.get('condition')
         try:
-            await item_manager.part_out_to_inventory(g.user_id, set_id, condition)
+            await item_manager.part_out_set_to_inventory(g.user_id, set_id, condition)
             return redirect(url_for('inventory.parted_out_sets'))
         except RuntimeError as e:
             # flash
