@@ -20,7 +20,7 @@
         <tr>
             <th>{{ order.id }}</th>
             <td>{{ order.buyer_name }}</td>
-            <td>{{ order.date_ordered }}</td>
+            <td>{{ order.date_ordered.strftime("%d/%m/%Y %H:%M") }}</td>
             <td>{{ order.status.name }}</td>
             <td>{{ order.parts|length }}</td>
             <td> <!-- Bricklink ID -->
