@@ -55,3 +55,11 @@ async def parted_out_sets():
             parted_out_sets = session.query(models.PartedOutSet).filter_by(id_user=g.user_id).all()
             return render_template('parted_out_sets.html', parted_out_sets=parted_out_sets)
 
+
+@blueprint.route('/orders/apply', methods=['GET'])
+@auth_request
+def apply_orders():
+    item_manager.apply_orders(g.user_id)
+    return "fatto"
+
+
