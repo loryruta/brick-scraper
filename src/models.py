@@ -28,6 +28,16 @@ class Color(Base):
     type = sa.Column(sa.String(64), nullable=False)
 
 
+class BOColor(Base):
+    __tablename__ = 'bo_colors'
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
+    name = sa.Column(sa.String(64), nullable=False)
+    id_bricklink = sa.Column(sa.Integer, sa.ForeignKey('colors.id'))
+
+    color = relationship('Color')
+
+
 class Category(Base):
     __tablename__ = 'categories'
 
@@ -92,6 +102,7 @@ class Order(Base):
         sa.UniqueConstraint(id_user, buyer_name, buyer_email, date_ordered),
     )
 
+    applied_order = relationship('AppliedOrder')
     parts = relationship('OrderPart')
 
 
@@ -126,7 +137,7 @@ class InventoryLog(Base):
     user = relationship("User", back_populates='inventory_history')
 
     __mapper_args__ = {
-        'polymorphic_identity': 'inventory_history',
+        'polymorphic_identity': 'inventory_history',  # TODO rename inventory_log
         'polymorphic_on': type
     }
 
@@ -140,7 +151,7 @@ class PartedOutSet(InventoryLog):
     set = relationship("Set")
 
     __mapper_args__ = {
-        'polymorphic_identity': 'parted_out_sets'
+        'polymorphic_identity': 'parted_out_sets'  # TODO rename parted_out_set
     }
 
 
@@ -148,12 +159,12 @@ class AppliedOrder(InventoryLog):
     __tablename__ = 'applied_orders'
 
     id = sa.Column(sa.Integer, sa.ForeignKey('inventory_history.id'), primary_key=True)
-    id_order = sa.Column(sa.Integer, sa.ForeignKey('orders.id'), nullable=False)
+    id_order = sa.Column(sa.Integer,  sa.ForeignKey('orders.id'), unique=True, nullable=False)
 
-    order = relationship("Order")
+    order = relationship('Order', viewonly=True)
 
     __mapper_args__ = {
-        'polymorphic_identity': 'applied_orders'
+        'polymorphic_identity': 'applied_orders'  # TODO rename applied_order
     }
 
 
