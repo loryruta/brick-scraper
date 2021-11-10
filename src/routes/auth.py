@@ -41,7 +41,7 @@ def auth_request(handler_func):
                 g.user_email = payload['user_email']
                 print('Authenticated user (%d): %s' % (g.user_id, g.user_email))
                 return current_app.ensure_sync(handler_func)(*args, **kwargs)
-            except jwt.DecodeError as e:
+            except jwt.PyJWTError as e:
                 print('JWT decoding failed:', e)
         return redirect(url_for('auth.login'))
     return wrapper

@@ -1,12 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+{% from "components/paginator.j2" import links as paginator_links %}
+{{ paginator_links(paginator) }}
+
 <table class="table table-sm">
 <thead>
     <tr>
         <th>ID</th>
         <th>Type</th>
-        <th>Parms</th>
+        <th>Params</th>
         <th>Created at</th>
         <th>Processed at</th>
     </tr>

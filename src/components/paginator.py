@@ -24,7 +24,7 @@ class Paginator:
         return page == self.pages_count - 1
 
     def get_current_page(self):
-        return int(request.args.get('page')) or 0
+        return int(request.args.get('page') or 0)
         
     def get_previous_page(self):
         return self.get_current_page() - 1
