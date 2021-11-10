@@ -8,7 +8,6 @@ import bcrypt
 import jwt
 import os
 from datetime import datetime, timezone, timedelta
-from item_manager import InvalidOperation
 from routes.auth import auth_request
 from models import Order, AppliedOrder
 

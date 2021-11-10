@@ -8,6 +8,9 @@ class InvalidRequest(Exception):
     pass
 
 
+# TODO typing for bricklink resources?
+
+
 def _make_request(method, path, params):
     auth = OAuth1(
         os.environ['BRICKLINK_CONSUMER_KEY'],

@@ -8,14 +8,43 @@
     <link href="/public/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <script type="text/javascript" src="/public/js/bootstrap.min.js"></script>
 
-    <title>BRICKSY</title>
+    <title>{{ env['APP_NAME'] }}</title>
 </head>
 <body>
+
+<!-- Header -->
+<header class="bg-light">
+    <h1>{{ env['APP_NAME'] }}</h1>
+</header>
+
+<!-- Body -->
 <div class="container-fluid">
-    <h1>BRICKSY</h1>
-    <div>
-        {% block content %}{% endblock %}
+    <div class='row'>
+        <!-- Sidebar -->
+        <div class='col-2 bg-light'>
+            <ul>
+                <li><a href="/inventory/history">Inventory history</a></li>
+                <li><a href="/parted_out_sets">Parted out sets</a></li>
+                <li><a href="/orders">Orders</a></li>
+
+                <li>Inventory
+                    <ul>
+                        <li><a href="/inventory/parts">Parts</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <!-- Content -->
+        <div class='col container'> 
+            {% block content %}{% endblock %}
+        </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="bg-light text-end">
+    Developed by <a href='https://github.com/loryruta' target="_blank">loryruta</a>
+</footer>
+
 </body>
 </html>

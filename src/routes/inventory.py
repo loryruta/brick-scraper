@@ -8,10 +8,9 @@ import bcrypt
 import jwt
 import os
 from datetime import datetime, timezone, timedelta
-import item_manager
-from item_manager import InvalidOperation
 from routes.auth import auth_request
 import models
+from op import bl_api_part_out_set
 
 
 blueprint = Blueprint('inventory', __name__)
@@ -40,12 +39,13 @@ def add_parted_out_set():
         set_id = request.form.get('set_id')
         condition = request.form.get('condition')
         try:
-            item_manager.part_out_set_to_inventory(g.user_id, set_id, condition)
+            with Session.begin() as session:
+                bl_api_part_out_set.append(session, g.user_id, set_id, condition)
             return redirect(url_for('inventory.parted_out_sets'))
         except RuntimeError as e:
             # flash
             return redirect(url_for('inventory.add_parted_out_set'))
-
+    
 
 @blueprint.route('/parted_out_sets', methods=['GET'])
 @auth_request
@@ -59,7 +59,7 @@ async def parted_out_sets():
 @blueprint.route('/orders/apply', methods=['GET'])
 @auth_request
 def apply_orders():
-    item_manager.apply_orders(g.user_id)
+    # TODO item_manager.apply_orders(g.user_id)
     return "fatto"
 
 

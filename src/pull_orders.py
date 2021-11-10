@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-from stores import bricklink, brickowl
+from backends import bricklink, brickowl
 from db import Session
 from models import BOColor, Color, User, Order, OrderStatus, OrderPart, Part
 import asyncio

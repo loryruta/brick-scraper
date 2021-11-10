@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table
 from sqlalchemy import func
 from enum import Enum
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 Base = declarative_base()
@@ -15,8 +16,28 @@ class User(Base):
     email = sa.Column(sa.String(512), unique=True, nullable=False)
     password_hash = sa.Column(sa.String(128), nullable=False)
 
+    bl_current_hour = sa.Column(sa.Integer)
+    bl_current_hour_requests_count = sa.Column(sa.Integer)
+
+    bl_api_current_day = sa.Column(sa.Integer)
+    bl_api_current_day_requests_count = sa.Column(sa.Integer)
+
+    bo_api_current_minute_requests_count = sa.Column(sa.Integer)
+    bo_api_current_minute = sa.Column(sa.Integer)
+
     orders = relationship('Order')
     inventory_history = relationship('InventoryLog', back_populates='user')
+
+
+class Op(Base):
+    __tablename__ = 'op'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'))
+    type = sa.Column(sa.String(64), nullable=False)
+    params = sa.Column(JSONB, nullable=False)
+    created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
+    processed_at = sa.Column(sa.DateTime)
 
 
 class Color(Base):
@@ -51,7 +72,6 @@ class Part(Base):
     id = sa.Column(sa.String, primary_key=True)
     name = sa.Column(sa.String, nullable=False)
     id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id'))
-    img_url = sa.Column(sa.String)
 
 
 class Set(Base):

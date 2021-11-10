@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<table class="table table-sm">
+<thead>
+    <tr>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Parms</th>
+        <th>Created at</th>
+        <th>Processed at</th>
+    </tr>
+</thead>
+<tbody>
+    {% for op in op_list %}
+        <tr class="{{ 'table-success' if op.processed_at else '' }}">
+            <th>{{ op.id }}</th>
+            <td>{{ op.type }}</td>
+            <td>{{ op.params }}</td>
+            <td>{{ op.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+            <td>{{ op.processed_at.strftime("%d/%m/%Y %H:%M") if op.processed_at else "-" }}</td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+{% endblock %}

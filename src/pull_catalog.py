@@ -9,7 +9,7 @@ from db import Session
 from sqlalchemy.dialects.postgresql import insert
 import time
 from typing import TextIO, List
-from stores import brickowl
+from backends import brickowl
 
 
 def _read_bricklink_catalog_file(file: TextIO, headers: List[str]):
