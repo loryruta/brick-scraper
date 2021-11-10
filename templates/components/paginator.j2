@@ -1,0 +1,19 @@
+
+{% macro links(paginator) -%}
+    <div class="btn-group" role="group">
+        <a class="btn btn-outline-primary {{ 'disabled' if paginator.is_first_page(paginator.get_current_page()) else '' }}"
+            href="{{ url_for(request.endpoint, page=paginator.get_previous_page()) }}">
+            <
+        </a>
+        {% for page in range(paginator.pages_count) %}
+            <a class="btn btn-outline-primary {{ 'active' if paginator.get_current_page() == page else '' }}"
+                href="{{ url_for(request.endpoint, page=page) }}">
+                {{ page + 1 }}
+            </a>
+        {% endfor %}
+        <a class="btn btn-outline-primary {{ 'disabled' if paginator.is_last_page(paginator.get_current_page()) else '' }}"
+            href="{{ url_for(request.endpoint, page=paginator.get_next_page()) }}">
+            >
+        </a>
+    </div>
+{%- endmacro %}

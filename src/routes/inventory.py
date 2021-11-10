@@ -1,5 +1,6 @@
 from flask import request, Blueprint, redirect, url_for, render_template, flash, g, current_app
 import sqlalchemy
+from components.paginator import Paginator
 from db import Session
 from models import InventoryPart, User, Part
 from sqlalchemy import select
@@ -19,12 +20,14 @@ blueprint = Blueprint('inventory', __name__)
 @blueprint.route('/inventory/parts', methods=['GET'])
 @auth_request
 async def parts():
-    if request.method == "GET":
-        with Session.begin() as session:
-            inv_parts = session.query(InventoryPart) \
-                .where(InventoryPart.id_user == g.user_id) \
-                .all()
-            return render_template('inventory/parts.html', inv_parts=inv_parts)
+    with Session.begin() as session:
+        paginator = Paginator(InventoryPart)
+        inventory_parts = paginator.paginate(
+            session.query(InventoryPart)
+                .where(InventoryPart.id_user == g.user_id)
+            ) \
+            .all()
+        return render_template('inventory/parts.j2', inv_parts=inventory_parts, paginator=paginator)
 
 
 @blueprint.route('/parted_out_sets/add', methods=['GET', 'POST'])

@@ -1,0 +1,5 @@
+
+{% macro to_string(color) -%}
+    <span>{{ color.name }}</span>
+    <div style="display: inline-block; width: 16px; height: 16px; border: 1px solid lightgray; background-color: #{{ color.rgb }}"></div>
+{%- endmacro %}
