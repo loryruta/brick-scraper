@@ -1,5 +1,5 @@
-from models import Op as SavedOp, User, PartedOutSet, InventoryPart
-from typing import Dict, Type
+from models import Op as SavedOp, Part, User, PartedOutSet, InventoryPart
+from typing import Dict, Optional, Type
 from backends import bricklink, brickowl
 import rate_limiter
 from db import Session
@@ -72,12 +72,12 @@ class bl_api_part_out_set:
                 if subset_entry['item']['type'] != "PART":
                     continue
 
-                item_no = subset_entry['item']['no']
+                part_id = subset_entry['item']['no']  # Bricklink item_no = part_id
                 #item_name = subset_entry['item']['name']
                 color_id = subset_entry['color_id']
 
                 values={
-                    'id_part': item_no,
+                    'id_part': part_id,
                     'id_color': color_id,
                     'condition': condition,
                     'quantity': subset_entry['quantity'],
@@ -96,7 +96,8 @@ class bl_api_part_out_set:
                         )
                     )
 
-                bl_retrieve_part_image.append(session, user.id, color_id, item_no)
+                bl_retrieve_part_image.append(session, user.id, color_id, part_id)
+                bo_api_part_id_lookup.append(session, user.id, part_id)
 
 
 @Registry.register(rate_limiter=rate_limiter.bricklink)
@@ -132,6 +133,26 @@ class bl_retrieve_part_image:
         # TODO still not found
 
 
+@Registry.register(rate_limiter=rate_limiter.brickowl_api)
+class bo_api_part_id_lookup:
+    def append(session, user_id: int, part_id: str):
+        _save_op(session, user_id, __class__, {
+            'part_id': part_id
+        })
+
+    def on_execute(session, user: User, saved_op: SavedOp):
+        part_id = saved_op.params['part_id']
+        part = session.query(Part).filter_by(id=part_id).first()
+
+        boids = brickowl.catalog_id_lookup(part_id, 'Part')['boids']
+        if len(boids) == 0:
+            print(f"WARNING: Part \"{part.name}\" ({part.id}) couldn't be matched with BO.")
+            return
+        
+        boid = boids[0].split('-')[0]  # Trims color (after - on BOIDs)
+        part.id_bo = boid
+
+
 @Registry.register(rate_limiter=rate_limiter.bricklink_api)
 class BL_API_PullOrders:
     def append(session, user_id: int):
@@ -148,15 +169,3 @@ class BO_API_PullOrders:
 
     def on_execute(session, user: User, saved_op: SavedOp):
         pass
-
-
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
-class BO_API_IdLookup:
-    def append(session, user_id: int, boid: str):
-        _save_op(session, user_id, __class__, {
-            'boid': boid
-        })
-
-    def on_execute(session, user: User, saved_op: SavedOp):
-        pass
-

@@ -21,8 +21,8 @@
             <th>{{ op.id }}</th>
             <td>{{ op.type }}</td>
             <td>{{ op.params }}</td>
-            <td>{{ op.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
-            <td>{{ op.processed_at.strftime("%d/%m/%Y %H:%M") if op.processed_at else "-" }}</td>
+            <td>{{ op.created_at.strftime("%d/%m/%Y %H:%M:%S") }}</td>
+            <td>{{ op.processed_at.strftime("%d/%m/%Y %H:%M:%S") if op.processed_at else "-" }}</td>
         </tr>
     {% endfor %}
 </tbody>

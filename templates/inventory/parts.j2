@@ -24,7 +24,17 @@
     {% for inv_part in inv_parts %}
         <tr>
             <td><img src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}" style="max-width: 250px; height: 70px"></td>
-            <th>{{ inv_part.part.id }}</th>
+            <th>
+                {{ inv_part.part.id }}<br>
+                <img src="/public/img/bricklink.png"
+                    style="max-height: 35px; width: 20px"
+                    draggable="false">
+                {% if inv_part.part.id_bo %}
+                    <img src="/public/img/brickowl.png"
+                        style="max-height: 35px; width: 20px"
+                        draggable="false">
+                {% endif %}
+            </th>
             <td>{{ inv_part.part.name }}</td>
             <td>{{ color.to_string(inv_part.color) }}</td>
             <td>{{ inv_part.color.type }}</td>

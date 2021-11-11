@@ -49,7 +49,7 @@ class Color(Base):
     type = sa.Column(sa.String(64), nullable=False)
 
 
-class BOColor(Base):
+class BOColor(Base):  # TODO HANDLE DIFFERENT TYPE OF IDs
     __tablename__ = 'bo_colors'
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
@@ -72,6 +72,8 @@ class Part(Base):
     id = sa.Column(sa.String, primary_key=True)
     name = sa.Column(sa.String, nullable=False)
     id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id'))
+
+    id_bo = sa.Column(sa.Integer)
 
 
 class Set(Base):

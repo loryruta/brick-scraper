@@ -1,3 +1,4 @@
+from typing import Optional
 import requests
 import json
 import os
@@ -29,4 +30,12 @@ def get_order_view(order_id: str):
 
 def get_order_items(order_id: str):
     return _make_request("get", "order/items", {'order_id': order_id})
+
+
+def catalog_id_lookup(id: str, type: str, id_type: Optional[str] = None):
+    return _make_request("get", "catalog/id_lookup", {
+        'id': id,
+        'type': type,
+        'id_type': id_type
+    })
 
