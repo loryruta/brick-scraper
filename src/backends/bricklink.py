@@ -3,54 +3,81 @@ from requests_oauthlib import OAuth1
 import os
 import json
 
+from models import User
+
 
 class InvalidRequest(Exception):
     pass
 
 
-# TODO typing for bricklink resources?
+class Bricklink:
+    def __init__(self, customer_key: str, customer_secret: str, token_value: str, token_secret: str):
+        self.customer_key = customer_key 
+        self.customer_secret = customer_secret
+        self.token_value = token_value
+        self.token_secret = token_secret
 
 
-def _make_request(method, path, params):
-    auth = OAuth1(
-        os.environ['BRICKLINK_CONSUMER_KEY'],
-        os.environ['BRICKLINK_CONSUMER_SECRET'],
-        os.environ['BRICKLINK_TOKEN_VALUE'],
-        os.environ['BRICKLINK_TOKEN_SECRET']
-    )
-    url = f"{os.environ['BRICKLINK_ENDPOINT']}/{path}"
-    #print(f"URL: {url}")
-    r = requests.request(method, url, auth=auth, params=params)
+    def _make_request(self, method, path, params):
+        endpoint = os.environ['BRICKLINK_ENDPOINT']
+        auth = OAuth1(
+            self.customer_key,
+            self.customer_secret,
+            self.token_value,
+            self.token_secret
+        )
 
-    if r.status_code != 200:
-        raise Exception("HTTP request failed with status code: " + str(r.status_code))
+        url = f"{endpoint}/{path}"
 
-    parsed_response = json.loads(r.content)
+        response = requests.request(method, url, auth=auth, params=params)
 
-    response_code = parsed_response['meta']['code']
+        if response.status_code != 200:
+            raise InvalidRequest("HTTP request failed with status code: " + str(r.status_code))
 
-    if response_code != 200:
-        raise InvalidRequest(f"Bricklink request failed ({response_code}):", parsed_response)
+        parsed_response = json.loads(response.content)
 
-    return parsed_response['data']
+        response_code = parsed_response['meta']['code']
 
+        if response_code != 200:
+            raise InvalidRequest(f"Bricklink request failed ({response_code}):", parsed_response)
 
-def get_colors():
-    return _make_request("GET", "colors", {})
+        return parsed_response['data']
 
 
-def get_orders():
-    return _make_request("GET", "orders", {})
+    def get_colors(self):
+        return self._make_request("GET", "colors", {})
 
 
-def get_order_items(order_id: str):
-    response = _make_request("GET", f"orders/{order_id}/items", {})
-    return response
+    def get_orders(self):
+        return self._make_request("GET", "orders", {})
 
 
-def get_order(order_id: str):
-    return _make_request("GET", f"orders/{order_id}", {})
+    def get_order_items(self, order_id: str):
+        return self._make_request("GET", f"orders/{order_id}/items", {})
 
 
-def get_subsets(item_type: str, item_no: str):
-    return _make_request('GET', f"items/{item_type}/{item_no}/subsets", {})
+    def get_order(self, order_id: str):
+        return self._make_request("GET", f"orders/{order_id}", {})
+
+
+    def get_subsets(self, item_type: str, item_no: str):
+        return self._make_request('GET', f"items/{item_type}/{item_no}/subsets", {})
+
+
+    def get_inventories(self):
+        return self._make_request('GET', f'inventories', {})
+
+
+    def get_inventory(self, inventory_id: str):
+        return self._make_request('GET', f'inventories/{inventory_id}', {})
+
+
+    @staticmethod
+    def from_user(user: User):
+        return Bricklink(
+            user.bl_customer_key,
+            user.bl_customer_secret,
+            user.bl_token_value,
+            user.bl_token_secret
+        )
+

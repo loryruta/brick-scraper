@@ -16,6 +16,7 @@ class User(Base):
     email = sa.Column(sa.String(512), unique=True, nullable=False)
     password_hash = sa.Column(sa.String(128), nullable=False)
 
+    # Bricklink credentials
     bl_customer_key = sa.Column(sa.String)
     bl_customer_secret = sa.Column(sa.String)
     bl_token_value = sa.Column(sa.String)
@@ -23,6 +24,7 @@ class User(Base):
 
     bl_credentials_approved = sa.Column(sa.Boolean, nullable=False, default=False)
 
+    # BrickOwl credentials
     bo_key = sa.Column(sa.String)
 
     bo_credentials_approved = sa.Column(sa.Boolean, nullable=False, default=False)
@@ -37,6 +39,9 @@ class User(Base):
     bo_api_current_minute_requests_count = sa.Column(sa.Integer)
     bo_api_current_minute = sa.Column(sa.Integer)
 
+    # Syncer
+    syncer_enabled = sa.Column(sa.Boolean, nullable=False, default=False)
+
     orders = relationship('Order')
 
 
@@ -44,14 +49,16 @@ class Op(Base):
     __tablename__ = 'op'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'))
+    id_user = sa.Column(sa.Integer)
     type = sa.Column(sa.String(64), nullable=False)
-    id_dependency = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
+    id_dependency = sa.Column(sa.Integer)
+    id_parent = sa.Column(sa.Integer)
     params = sa.Column(JSONB, nullable=False)
     created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
     processed_at = sa.Column(sa.DateTime)
 
     dependency = relationship('Op', uselist=False)
+    user = relationship('User')
 
 
 class Color(Base):

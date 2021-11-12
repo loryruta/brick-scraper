@@ -1,0 +1,110 @@
+
+{% extends 'base.j2' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col pb-3">
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <!-- Account -->
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <div class="pt-3 mb-2 border-bottom">
+                <h1 class="h3">Account</h1>
+            </div>
+
+            <form method='POST'> <!-- TODO -->
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type='email' name='email' class="form-control" value="{{ user.email }}" disabled>
+                </div>
+            </form>
+
+            <div class="mb-3 d-flex justify-content-end"> <!-- TODO -->
+                <button type='submit' class='btn btn-sm btn-danger'>
+                    Delete
+                </button>
+            </div>
+
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <!-- Backends -->
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <div class="border-bottom">
+                <h1 class="h3">Remote keys</h1>
+            </div>
+
+            <form method='POST' action='{{ url_for("user.settings.approve_backends") }}'>
+                <!-- Bricklink -->
+                <div class="pt-3 pb-2 d-flex align-items-baseline justify-content-between">
+                    <h6>Bricklink</h6>
+                    <span class="{{ 'text-success' if user.bl_credentials_approved else 'fw-bold text-danger' }}">
+                        {{ 'Approved' if user.bl_credentials_approved else 'Not approved' }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Customer key</label>
+                    <input type='text' name='bl_customer_key' class="form-control" value="{{ user.bl_customer_key or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Customer secret</label>
+                    <input type='text' name='bl_customer_secret' class="form-control" value="{{ user.bl_customer_secret or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Token value</label>
+                    <input type='text' name='bl_token_value' class="form-control" value="{{ user.bl_token_value or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Token secret</label>
+                    <input type='text' name='bl_token_secret' class="form-control" value="{{ user.bl_token_secret or '' }}">
+                </div>
+
+                <!-- Brickowl -->
+                <div class="pt-3 pb-2 d-flex align-items-baseline justify-content-between">
+                    <h6>BrickOwl</h6>
+                    <span class="{{ 'text-success' if user.bo_credentials_approved else 'fw-bold text-danger' }}">
+                        {{ 'Approved' if user.bo_credentials_approved else 'Not approved' }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Key</label>
+                    <input type='text' name='bo_key' class="form-control" value="{{ user.bo_key or '' }}">
+                </div>
+
+                <!-- Submit -->
+                <div class="text-center">
+                    <button type='submit' class="btn btn-primary">
+                        Approve
+                    </button><br>
+                    {% if 'backends' in form_feedback and 'submit' in form_feedback['backends'] %}
+                        <div class="text-danger mt-2">
+                            {{ form_feedback['backends']['submit'] }}
+                        </div>
+                    {% endif %}
+                </div>
+            </form>
+
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <!-- Syncer -->
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <div class="pt-3 mb-2 border-bottom d-flex justify-content-between">
+                <h1 class="h3">Syncer <small class="fs-6">(Bricklink → BrickOwl)</small></h1>
+                <span class="{{ 'text-success' if user.syncer_enabled else 'text-danger' }}">
+                    {{ 'Enabled' if user.syncer_enabled else 'Disabled' }}
+                </span>
+            </div>
+
+            <form class="mb-2" method='POST' action='{{ url_for("user.settings.toggle_syncer") }}'>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-warning">
+                        {{ "Disable" if user.syncer_enabled else "Enable" }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

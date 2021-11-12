@@ -27,6 +27,8 @@ class Worker:
 
                 have_to_wait = []
 
+                # TODO ADD PARENT_ID SUPPORT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                 while remaining_op_count > 0:  # Every cron invocation the worker is permitted to execute a certain number of operations.
                     saved_ops = session.query(SavedOp) \
                         .filter(and_(

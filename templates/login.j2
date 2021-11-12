@@ -6,11 +6,11 @@
     <div class="row">
         <div class="col">
             <div class="pt-3 pb-2 mb-2">
-                <h2 class="h3">Register a user</h2>
+                <h1 class="h2">Login</h1>
             </div>
 
             <div class="pb-2 mb-2">
-                <form method='POST' action='{{ url_for("auth.register") }}' autocomplete='off'>
+                <form method='POST' action='{{ url_for("auth.login") }}'>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
                         <input type='email' name='email' class="form-control">
@@ -32,18 +32,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Confirm password</label>
-                        <input type='password' name='confirm_password' class="form-control" autocomplete="off">
-                        {% if 'confirm_password' in form_feedback %}
-                            <div class="text-danger">
-                                {{ form_feedback['confirm_password'] }}
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
                         <button type='submit' class="btn btn-primary mb-1">
-                            Sign up
+                            Sign in
                         </button><br>
                         {% if 'submit' in form_feedback %}
                             <div class="text-danger">
@@ -52,6 +42,10 @@
                         {% endif %}
                     </div>
                 </form>
+
+                <div class="pb-3 mb-2">
+                    <a href="/register">Or register here</a>
+                </div>
             </div>
         </div>
     </div>

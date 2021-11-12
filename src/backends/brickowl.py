@@ -3,39 +3,60 @@ import requests
 import json
 import os
 
-
-def _make_request(method, path, params):
-    params['key'] = os.environ['BRICKOWL_KEY']
-
-    url = os.environ['BRICKOWL_ENDPOINT'] + "/" + path
-    r = requests.request(method, url, params=params)
-
-    if r.status_code != 200:
-        raise Exception(f"`{method} {r.request.url}` failed with status code: {r.status_code}")
-
-    return json.loads(r.content)
+from models import User
 
 
-def get_colors():
-    return _make_request("get", "catalog/color_list", {})
+class InvalidRequest(Exception):
+    pass
 
 
-def get_orders():
-    return _make_request("get", "order/list", {})
+class BrickOwl:
+    def __init__(self, key: str):
+        self.key = key
 
 
-def get_order_view(order_id: str):
-    return _make_request("get", "order/view", {'order_id': order_id})
+    def _make_request(self, method, path, params):
+        params['key'] = self.key
+
+        endpoint = os.environ['BRICKOWL_ENDPOINT']
+        url = f"{endpoint}/{path}"
+        r = requests.request(method, url, params=params)
+
+        if r.status_code != 200:
+            raise InvalidRequest(f"`{method} {r.request.url}` failed with status code: {r.status_code}")
+
+        return json.loads(r.content)
 
 
-def get_order_items(order_id: str):
-    return _make_request("get", "order/items", {'order_id': order_id})
+    def get_colors(self):
+        return self._make_request("GET", "catalog/color_list", {})
 
 
-def catalog_id_lookup(id: str, type: str, id_type: Optional[str] = None):
-    return _make_request("get", "catalog/id_lookup", {
-        'id': id,
-        'type': type,
-        'id_type': id_type
-    })
+    def get_orders(self):
+        return self._make_request("GET", "order/list", {})
+
+
+    def get_order_view(self, order_id: str):
+        return self._make_request("GET", "order/view", {'order_id': order_id})
+
+
+    def get_order_items(self, order_id: str):
+        return self._make_request("GET", "order/items", {'order_id': order_id})
+
+
+    def catalog_id_lookup(self, id: str, type: str, id_type: Optional[str] = None):
+        return self._make_request("GET", "catalog/id_lookup", {
+            'id': id,
+            'type': type,
+            'id_type': id_type
+        })
+
+    
+    def get_inventory_list(self):
+        return self._make_request("GET", "inventory/list", {})
+        
+
+    @staticmethod
+    def from_user(user: User):
+        return BrickOwl(user.bo_key)
 

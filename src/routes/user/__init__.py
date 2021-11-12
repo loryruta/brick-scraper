@@ -4,28 +4,12 @@ from routes.auth import auth_request
 from models import Op as SavedOp, User
 from components.paginator import Paginator
 from sqlalchemy import update
+from op import bl_api_download_inventory, bl_api_get_inventories, save_sync
+from backends import bricklink, brickowl
+from routes.user.settings import blueprint as settings_blueprint
 
 
-blueprint = Blueprint('account', __name__)
-
-
-@blueprint.route('/settings', methods=['GET', 'POST'])
-@auth_request
-def settings():
-    if request.method == "GET":
-        with Session.begin() as session:
-            user = session.query(User) \
-                .filter_by(id=g.user_id) \
-                .first()
-            return render_template('settings.j2', user=user)
-
-    elif request.method == "POST":
-        with Session.begin() as session:
-            session.execute(
-                update(User) \
-                    .values(id=g.user_id, **request.form.to_dict())
-            )
-            return redirect(url_for('account.settings'))
+blueprint = Blueprint('user', __name__)
 
 
 @blueprint.route('/admin/op', methods=['GET'])
@@ -45,4 +29,7 @@ def op():
             ) \
             .all()
         return render_template('op.j2', op_list=op_list, paginator=paginator)
+
+
+blueprint.register_blueprint(settings_blueprint)
 

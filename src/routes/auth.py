@@ -32,19 +32,32 @@ def set_authorization_cookie(response, user):
     return response
 
 
-def auth_request(handler_func):
+def auth_request(handler_func):  # TODO rename to require_auth
     @wraps(handler_func)
     def wrapper(*args, **kwargs):
         jwt_token = request.cookies.get('token')
         if jwt_token:
             try:
                 payload = jwt.decode(jwt_token, os.environ['JWT_SECRET'], algorithms=['HS256'])
-                g.user_id = payload['user_id']
-                g.user_email = payload['user_email']
-                print('Authenticated user (%d): %s' % (g.user_id, g.user_email))
-                return current_app.ensure_sync(handler_func)(*args, **kwargs)
+
+                with Session() as session:
+                    user_id = payload['user_id']
+                    user = session.query(User) \
+                        .filter_by(id=user_id) \
+                        .first()
+
+                    if user:
+                        g.user_id = user_id
+                        g.user_email = payload['user_email']
+
+                        print('Authenticated user (%d): %s' % (g.user_id, g.user_email))
+                        return current_app.ensure_sync(handler_func)(*args, **kwargs)
+                    else:
+                        print(f"User #{user_id} does not exist.")
+
             except jwt.PyJWTError as e:
                 print('JWT decoding failed:', e)
+            
         return redirect(url_for('auth.login'))
     return wrapper
 
@@ -103,35 +116,43 @@ def register():
 
 @blueprint.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == "GET":
+        form_feedback = json.loads(get_flashed_messages()[0]) if get_flashed_messages() else {}
+        return render_template('login.j2', form_feedback=form_feedback)
+
     if request.method == "POST":
         email = request.form.get('email')
         password = request.form.get('password')
 
-        print("Logging in: (%s, %s)" % (email, "*"))
+        def send_form_feedback(form_feedback):
+            flash(json.dumps(form_feedback))
+            return redirect(url_for(request.endpoint))
+        
+        form_feedback = {}
 
-        try:
-            with Session() as session:
-                user = session.query(User).filter_by(email=email).first()
+        if not email:
+            form_feedback['email'] = "Email is required."
 
-                # todo USER IS NULL?
+        if not password:
+            form_feedback['password'] = "Password is required."
+        
+        if form_feedback:
+            send_form_feedback(form_feedback)
 
-                remote_password_hash = user.password_hash
-                remote_password_hash_b = remote_password_hash.encode('utf-8')
+        with Session.begin() as session:
+            user = session.query(User) \
+                .filter_by(email=email) \
+                .first()
 
-                # Password verification
-                if bcrypt.checkpw(password.encode(), remote_password_hash_b):
+            if user:
+                if bcrypt.checkpw(password.encode(), user.password_hash.encode('utf-8')):
                     response = redirect('/')
                     set_authorization_cookie(response, user)
                     return response, 200
                 else:
-                    # Mismatching passwords
                     pass
-        except SQLAlchemyError:
-            # The user couldn't be found in DB
-            pass
+            else:
+                pass
 
-        flash("Wrong credentials")
-        return redirect(url_for('auth.login'))
-    else:
-        return render_template('login.html')
+            return send_form_feedback({ 'submit': "Wrong credentials." })
 
