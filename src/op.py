@@ -1,4 +1,4 @@
-from models import Op as SavedOp, Part, User, PartedOutSet, InventoryPart
+from models import Op as SavedOp, Part, User, InventoryPart
 from typing import Dict, Optional, Type
 from backends import bricklink, brickowl
 import rate_limiter
@@ -16,7 +16,6 @@ class Registry:
     def register(rate_limiter = rate_limiter.none):
         def wrapper(op):
             op.rate_limiter = rate_limiter
-            Registry.op_list.append(op)
 
             def execute(session, user: User, saved_op: SavedOp):
                 if rate_limiter.get_wait_time(user) == 0:
@@ -30,83 +29,35 @@ class Registry:
             
             op.execute = execute
 
+            Registry.op_list.append(op)
+
             return op
 
         return wrapper
 
 
-def _save_op(session, user_id: int, _class: Type, params: Dict):
-    session.add(
-        SavedOp(
-            id_user=user_id,
-            type=_class.__name__,
-            params=params
+class Op:
+    def __init__(self, user_id: int, **params):
+        self.user_id = user_id
+        self.params = params
+
+    def save(self, session, dependency_id: Optional[int] = None):
+        saved_op = SavedOp(
+            id_user=self.user_id,
+            type=self.__class__.__name__,
+            id_dependency=dependency_id,
+            params=self.params,
         )
-    )
-
-
-@Registry.register(rate_limiter=rate_limiter.bricklink_api)
-class bl_api_part_out_set:
-    def append(session, user_id: int, set_id: int, condition: str):
-        _save_op(session, user_id, __class__, {
-            'set_id': set_id,
-            'condition': condition
-        })
-
-    def on_execute(session, user: User, saved_op: SavedOp):
-        set_id = saved_op.params['set_id']
-        condition = saved_op.params['condition']
-
-        matches = bricklink.get_subsets('SET', set_id)
-
-        inventory_log = PartedOutSet(
-            id_user=user.id,
-            id_set=set_id
-            )
-        session.add(inventory_log)
-        session.flush(objects=[inventory_log])
-        session.refresh(inventory_log)
-
-        for match in matches:
-            for subset_entry in match['entries']:
-                if subset_entry['item']['type'] != "PART":
-                    continue
-
-                part_id = subset_entry['item']['no']  # Bricklink item_no = part_id
-                #item_name = subset_entry['item']['name']
-                color_id = subset_entry['color_id']
-
-                values={
-                    'id_part': part_id,
-                    'id_color': color_id,
-                    'condition': condition,
-                    'quantity': subset_entry['quantity'],
-                    'id_parted_out_set': inventory_log.id,
-                    'id_user': user.id
-                }
-
-                # TODO handle Integrity error if a part/color isn't found
-
-                session.execute(
-                    insert(InventoryPart)
-                        .values(**values)
-                        .on_conflict_do_update(
-                            index_elements=['id_part', 'id_color', 'condition', 'id_parted_out_set', 'id_user'],
-                            set_={'quantity': InventoryPart.quantity + subset_entry['quantity']}
-                        )
-                    )
-
-                bl_retrieve_part_image.append(session, user.id, color_id, part_id)
-                bo_api_part_id_lookup.append(session, user.id, part_id)
+        session.add(saved_op)
+        session.flush([saved_op])
+        session.refresh(saved_op)
+        return saved_op
 
 
 @Registry.register(rate_limiter=rate_limiter.bricklink)
-class bl_retrieve_part_image:
-    def append(session, user_id: int, color_id: int, part_id: str):
-        _save_op(session, user_id, __class__, {
-            'color_id': color_id,
-            'part_id': part_id,
-        })
+class bl_retrieve_part_image(Op):
+    def __init__(user_id: int, color_id: int, part_id: str):
+        super().__init__(user_id, color_id=color_id, part_id=part_id)
 
     def on_execute(session, user: User, saved_op: SavedOp):
         color_id = saved_op.params['color_id']
@@ -133,12 +84,19 @@ class bl_retrieve_part_image:
         # TODO still not found
 
 
+@Registry.register(rate_limiter=rate_limiter.bricklink_api)
+class bl_api_download_inventory:
+    def __init__(user_id: int, inventory_id: int):
+        super().__init__(user_id, inventory_id=inventory_id)
+
+    def on_execute(session, user: User, saved_op: SavedOp):
+        pass
+
+
 @Registry.register(rate_limiter=rate_limiter.brickowl_api)
 class bo_api_part_id_lookup:
-    def append(session, user_id: int, part_id: str):
-        _save_op(session, user_id, __class__, {
-            'part_id': part_id
-        })
+    def __init__(user_id: int, part_id: int):
+        super().__init__(user_id, part_id=part_id)
 
     def on_execute(session, user: User, saved_op: SavedOp):
         part_id = saved_op.params['part_id']
@@ -153,19 +111,18 @@ class bo_api_part_id_lookup:
         part.id_bo = boid
 
 
-@Registry.register(rate_limiter=rate_limiter.bricklink_api)
-class BL_API_PullOrders:
-    def append(session, user_id: int):
-        _save_op(session, user_id, __class__, {})
-
-    def on_execute(session, user: User, saved_op: SavedOp):
-        pass
+def save(session, op: Op):
+    op.save(session)
 
 
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
-class BO_API_PullOrders:
-    def append(session, user_id: int):
-        _save_op(session, user_id, __class__, {})
+def save_sync(session, *ops: Op):
+    last_op_id = None
+    for op in ops:
+        saved_op = op.save(session, last_op_id)
+        last_op_id = saved_op.id
 
-    def on_execute(session, user: User, saved_op: SavedOp):
-        pass
+
+def save_async(session, *ops: Op):
+    for op in ops:
+        op.save(session)
+

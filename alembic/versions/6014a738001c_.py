@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: 52434e15a484
+Revision ID: 6014a738001c
 Revises: 
-Create Date: 2021-11-07 23:38:24.245190
+Create Date: 2021-11-11 23:56:07.109205
 
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
-
-revision = '52434e15a484'
+revision = '6014a738001c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,20 +27,31 @@ def upgrade():
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('rgb', sa.String(length=6), nullable=False),
     sa.Column('type', sa.String(length=64), nullable=False),
+    sa.Column('id_bo', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(length=512), nullable=False),
     sa.Column('password_hash', sa.String(length=128), nullable=False),
+    sa.Column('bl_current_hour', sa.Integer(), nullable=True),
+    sa.Column('bl_current_hour_requests_count', sa.Integer(), nullable=True),
+    sa.Column('bl_api_current_day', sa.Integer(), nullable=True),
+    sa.Column('bl_api_current_day_requests_count', sa.Integer(), nullable=True),
+    sa.Column('bo_api_current_minute_requests_count', sa.Integer(), nullable=True),
+    sa.Column('bo_api_current_minute', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
-    op.create_table('inventory_history',
+    op.create_table('op',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('id_user', sa.Integer(), nullable=False),
+    sa.Column('id_user', sa.Integer(), nullable=True),
     sa.Column('type', sa.String(length=64), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('id_dependency', sa.Integer(), nullable=True),
+    sa.Column('params', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('processed_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['id_dependency'], ['op.id'], ),
     sa.ForeignKeyConstraint(['id_user'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -60,6 +71,8 @@ def upgrade():
     sa.Column('shipping_address_city', sa.String(), nullable=True),
     sa.Column('shipping_address_state', sa.String(), nullable=True),
     sa.Column('shipping_address_postal_code', sa.String(), nullable=True),
+    sa.Column('id_bl', sa.Integer(), nullable=True),
+    sa.Column('id_bo', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['id_user'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id_user', 'buyer_name', 'buyer_email', 'date_ordered')
@@ -68,7 +81,7 @@ def upgrade():
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('id_category', sa.Integer(), nullable=True),
-    sa.Column('img_url', sa.String(), nullable=True),
+    sa.Column('id_bo', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['id_category'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -82,12 +95,20 @@ def upgrade():
     sa.ForeignKeyConstraint(['id_category'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('applied_orders',
+    op.create_table('inventory_parts',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('id_order', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['id'], ['inventory_history.id'], ),
-    sa.ForeignKeyConstraint(['id_order'], ['orders.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('id_user', sa.Integer(), nullable=False),
+    sa.Column('id_part', sa.String(), nullable=False),
+    sa.Column('id_color', sa.Integer(), nullable=False),
+    sa.Column('condition', sa.String(length=1), nullable=False),
+    sa.Column('quantity', sa.Integer(), nullable=False),
+    sa.Column('user_remarks', sa.String(), nullable=True),
+    sa.Column('user_description', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['id_color'], ['colors.id'], ),
+    sa.ForeignKeyConstraint(['id_part'], ['parts.id'], ),
+    sa.ForeignKeyConstraint(['id_user'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id_user', 'id_part', 'id_color', 'condition', 'user_remarks')
     )
     op.create_table('order_parts',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -104,41 +125,17 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id_order', 'id_part', 'id_color', 'condition', 'quantity', 'user_remarks', 'user_description')
     )
-    op.create_table('parted_out_sets',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('id_set', sa.String(), nullable=False),
-    sa.ForeignKeyConstraint(['id'], ['inventory_history.id'], ),
-    sa.ForeignKeyConstraint(['id_set'], ['sets.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('inventory_parts',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('id_part', sa.String(), nullable=False),
-    sa.Column('id_color', sa.Integer(), nullable=False),
-    sa.Column('condition', sa.String(length=1), nullable=False),
-    sa.Column('quantity', sa.Integer(), nullable=False),
-    sa.Column('id_parted_out_set', sa.Integer(), nullable=True),
-    sa.Column('id_user', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['id_color'], ['colors.id'], ),
-    sa.ForeignKeyConstraint(['id_part'], ['parts.id'], ),
-    sa.ForeignKeyConstraint(['id_parted_out_set'], ['parted_out_sets.id'], ),
-    sa.ForeignKeyConstraint(['id_user'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id_part', 'id_color', 'condition', 'id_parted_out_set', 'id_user')
-    )
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('inventory_parts')
-    op.drop_table('parted_out_sets')
     op.drop_table('order_parts')
-    op.drop_table('applied_orders')
+    op.drop_table('inventory_parts')
     op.drop_table('sets')
     op.drop_table('parts')
     op.drop_table('orders')
-    op.drop_table('inventory_history')
+    op.drop_table('op')
     op.drop_table('users')
     op.drop_table('colors')
     op.drop_table('categories')

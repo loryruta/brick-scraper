@@ -1,0 +1,69 @@
+
+{% extends 'base.j2' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <form method='POST' action='{{ url_for(request.endpoint) }}'>
+                <!-- Bricklink -->
+                <div class="pt-3 pb-2 mb-2 border-bottom d-flex align-items-baseline justify-content-between">
+                    <h3 class="h3">Bricklink</h3>
+                    {% if user.bl_credentials_approved %}
+                        <small class="text-success">Approved</small>
+                    {% else %}
+                        <small class="text-danger">Not approved</small>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Customer key</label>
+                    <input type='text' name='bl_customer_key' class="form-control" value="{{ user.bl_customer_key or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Customer secret</label>
+                    <input type='text' name='bl_customer_secret' class="form-control" value="{{ user.bl_customer_secret or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Token value</label>
+                    <input type='text' name='bl_token_value' class="form-control" value="{{ user.bl_token_value or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Token secret</label>
+                    <input type='text' name='bl_token_secret' class="form-control" value="{{ user.bl_token_secret or '' }}">
+                </div>
+
+                <!-- Brickowl -->
+                <div class="pt-3 pb-2 mb-2 border-bottom d-flex align-items-baseline justify-content-between">
+                    <h3 class="h3">Brickowl</h3>
+                    {% if user.bl_credentials_approved %}
+                        <small class="text-success">Approved</small>
+                    {% else %}
+                        <small class="text-danger">Not approved</small>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Key</label>
+                    <input type='text' name='bo_key' class="form-control" value="{{ user.bo_key or '' }}">
+                </div>
+
+                <!-- Submit -->
+                <div class="mb-3 text-center">
+                    <button type='submit' class="btn btn-primary mb-1">
+                        Approve
+                    </button><br>
+                    {% if 'submit' in form_feedback %}
+                        <div class="text-danger">
+                            {{ form_feedback['submit'] }}
+                        </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

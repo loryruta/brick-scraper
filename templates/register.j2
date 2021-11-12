@@ -1,0 +1,61 @@
+
+{% extends '_base.j2' %}
+
+{% block body %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="pt-3 pb-2 mb-2">
+                <h2 class="h3">Register a user</h2>
+            </div>
+
+            <div class="pb-2 mb-2">
+                <form method='POST' action='{{ url_for("auth.register") }}'>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type='email' name='email' class="form-control">
+                        {% if 'email' in form_feedback %}
+                            <div class="text-danger">
+                                {{ form_feedback['email'] }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type='password' name='password' class="form-control">
+                        {% if 'password' in form_feedback %}
+                            <div class="text-danger">
+                                {{ form_feedback['password'] }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Confirm password</label>
+                        <input type='password' name='confirm_password' class="form-control">
+                        {% if 'confirm_password' in form_feedback %}
+                            <div class="text-danger">
+                                {{ form_feedback['confirm_password'] }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <button type='submit' class="btn btn-primary mb-1">
+                            Sign up
+                        </button><br>
+                        {% if 'submit' in form_feedback %}
+                            <div class="text-danger">
+                                {{ form_feedback['submit'] }}
+                            </div>
+                        {% endif %}
+                    </div>
+               
+             
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

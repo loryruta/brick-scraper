@@ -11,7 +11,6 @@ import os
 from datetime import datetime, timezone, timedelta
 from routes.auth import auth_request
 import models
-from op import bl_api_part_out_set
 
 
 blueprint = Blueprint('inventory', __name__)
@@ -28,35 +27,6 @@ async def parts():
             ) \
             .all()
         return render_template('inventory/parts.j2', inv_parts=inventory_parts, paginator=paginator)
-
-
-@blueprint.route('/parted_out_sets/add', methods=['GET', 'POST'])
-@auth_request
-def add_parted_out_set():
-    # GET
-    if request.method == "GET":
-        return render_template('add_parted_out_set.html')
-
-    # POST
-    elif request.method == "POST":
-        set_id = request.form.get('set_id')
-        condition = request.form.get('condition')
-        try:
-            with Session.begin() as session:
-                bl_api_part_out_set.append(session, g.user_id, set_id, condition)
-            return redirect(url_for('inventory.parted_out_sets'))
-        except RuntimeError as e:
-            # flash
-            return redirect(url_for('inventory.add_parted_out_set'))
-    
-
-@blueprint.route('/parted_out_sets', methods=['GET'])
-@auth_request
-async def parted_out_sets():
-    if request.method == "GET":
-        with Session.begin() as session:
-            parted_out_sets = session.query(models.PartedOutSet).filter_by(id_user=g.user_id).all()
-            return render_template('parted_out_sets.html', parted_out_sets=parted_out_sets)
 
 
 @blueprint.route('/orders/apply', methods=['GET'])

@@ -9,7 +9,7 @@ import jwt
 import os
 from datetime import datetime, timezone, timedelta
 from routes.auth import auth_request
-from models import Order, AppliedOrder
+from models import Order
 
 
 blueprint = Blueprint('user', __name__)

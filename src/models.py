@@ -16,6 +16,18 @@ class User(Base):
     email = sa.Column(sa.String(512), unique=True, nullable=False)
     password_hash = sa.Column(sa.String(128), nullable=False)
 
+    bl_customer_key = sa.Column(sa.String)
+    bl_customer_secret = sa.Column(sa.String)
+    bl_token_value = sa.Column(sa.String)
+    bl_token_secret = sa.Column(sa.String)
+
+    bl_credentials_approved = sa.Column(sa.Boolean, nullable=False, default=False)
+
+    bo_key = sa.Column(sa.String)
+
+    bo_credentials_approved = sa.Column(sa.Boolean, nullable=False, default=False)
+
+    # Rate limiter
     bl_current_hour = sa.Column(sa.Integer)
     bl_current_hour_requests_count = sa.Column(sa.Integer)
 
@@ -26,7 +38,6 @@ class User(Base):
     bo_api_current_minute = sa.Column(sa.Integer)
 
     orders = relationship('Order')
-    inventory_history = relationship('InventoryLog', back_populates='user')
 
 
 class Op(Base):
@@ -35,9 +46,12 @@ class Op(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'))
     type = sa.Column(sa.String(64), nullable=False)
+    id_dependency = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
     params = sa.Column(JSONB, nullable=False)
     created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
     processed_at = sa.Column(sa.DateTime)
+
+    dependency = relationship('Op', uselist=False)
 
 
 class Color(Base):
@@ -48,15 +62,7 @@ class Color(Base):
     rgb = sa.Column(sa.String(6), nullable=False)
     type = sa.Column(sa.String(64), nullable=False)
 
-
-class BOColor(Base):  # TODO HANDLE DIFFERENT TYPE OF IDs
-    __tablename__ = 'bo_colors'
-
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
-    name = sa.Column(sa.String(64), nullable=False)
-    id_bricklink = sa.Column(sa.Integer, sa.ForeignKey('colors.id'))
-
-    color = relationship('Color')
+    id_bo = sa.Column(sa.Integer)
 
 
 class Category(Base):
@@ -117,14 +123,13 @@ class Order(Base):
     shipping_address_state = sa.Column(sa.String)
     shipping_address_postal_code = sa.Column(sa.String)
 
-    id_bricklink = sa.Column(sa.Integer)
-    id_brickowl = sa.Column(sa.Integer)
+    id_bl = sa.Column(sa.Integer)
+    id_bo = sa.Column(sa.Integer)
 
     __table_args__ = (
         sa.UniqueConstraint(id_user, buyer_name, buyer_email, date_ordered),
     )
 
-    applied_order = relationship('AppliedOrder')
     parts = relationship('OrderPart')
 
 
@@ -148,64 +153,22 @@ class OrderPart(Base):
     )
 
 
-class InventoryLog(Base):
-    __tablename__ = 'inventory_history'
-
-    id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'), nullable=False)
-    type = sa.Column(sa.String(64), nullable=False)
-    created_at = sa.Column(sa.DateTime, server_default=func.now())
-
-    user = relationship("User", back_populates='inventory_history')
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'inventory_history',  # TODO rename inventory_log
-        'polymorphic_on': type
-    }
-
-
-class PartedOutSet(InventoryLog):
-    __tablename__ = 'parted_out_sets'
-
-    id = sa.Column(sa.Integer, sa.ForeignKey('inventory_history.id'), primary_key=True)
-    id_set = sa.Column(sa.String, sa.ForeignKey('sets.id'), nullable=False)
-
-    set = relationship("Set")
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'parted_out_sets'  # TODO rename parted_out_set
-    }
-
-
-class AppliedOrder(InventoryLog):
-    __tablename__ = 'applied_orders'
-
-    id = sa.Column(sa.Integer, sa.ForeignKey('inventory_history.id'), primary_key=True)
-    id_order = sa.Column(sa.Integer,  sa.ForeignKey('orders.id'), unique=True, nullable=False)
-
-    order = relationship('Order', viewonly=True)
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'applied_orders'  # TODO rename applied_order
-    }
-
-
 class InventoryPart(Base):
     __tablename__ = 'inventory_parts'
 
     id = sa.Column(sa.Integer, primary_key=True)
+    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'), nullable=False)
     id_part = sa.Column(sa.String, sa.ForeignKey('parts.id'), nullable=False)
     id_color = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
     condition = sa.Column(sa.String(1), nullable=False, default='U')
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
-    id_parted_out_set = sa.Column(sa.Integer, sa.ForeignKey('parted_out_sets.id'), nullable=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'), nullable=False)  # todo if id_parted_out_set is valorized, id_user must be the same of parted_out_sets.id_user
+    user_remarks = sa.Column(sa.String)
+    user_description = sa.Column(sa.String)
 
     part = relationship("Part")
     color = relationship("Color")
-    parted_out_set = relationship("PartedOutSet")
     user = relationship("User")
 
     __table_args__ = (
-        sa.UniqueConstraint('id_part', 'id_color', 'condition', 'id_parted_out_set', 'id_user'),
+        sa.UniqueConstraint('id_user', 'id_part', 'id_color', 'condition', 'user_remarks'),
     )

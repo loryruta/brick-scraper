@@ -16,33 +16,16 @@
 <body>
 
 <!-- Header -->
-<header class="bg-light">
-    <h1>{{ env['APP_NAME'] }}</h1>
+<header class="bg-light p-3 pt-1 pb-1">
+    <div class="d-flex justify-content-between">
+        <h1 class="h1">{{ env['APP_NAME'] }}</h1>
+        <div>
+        </div>
+    </div>
 </header>
 
 <!-- Body -->
-<div class="container-fluid">
-    <div class='row'>
-        <!-- Sidebar -->
-        <div class='col-2 bg-light'>
-            <ul>
-                <li><a href="/inventory/history">Inventory history</a></li>
-                <li><a href="/parted_out_sets">Parted out sets</a></li>
-                <li><a href="/orders">Orders</a></li>
-
-                <li>Inventory
-                    <ul>
-                        <li><a href="/inventory/parts">Parts</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-        <!-- Content -->
-        <div class='col container'> 
-            {% block content %}{% endblock %}
-        </div>
-    </div>
-</div>
+{% block body %}{% endblock %}
 
 <!-- Footer -->
 <footer class="bg-light text-end">

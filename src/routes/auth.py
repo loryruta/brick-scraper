@@ -1,4 +1,5 @@
 from flask import request, Blueprint, redirect, url_for, render_template, flash, g, current_app
+from flask.helpers import get_flashed_messages
 from db import Session
 from models import User
 from sqlalchemy import select
@@ -9,6 +10,7 @@ import os
 from datetime import datetime, timezone, timedelta
 import inspect
 from functools import wraps
+import json
 
 
 blueprint = Blueprint('auth', __name__)
@@ -49,9 +51,33 @@ def auth_request(handler_func):
 
 @blueprint.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == "POST":
+    if request.method == "GET":
+        form_feedback = json.loads(get_flashed_messages()[0]) if get_flashed_messages() else {}
+        return render_template('register.j2', form_feedback=form_feedback)
+
+    elif request.method == "POST":
         email = request.form.get('email')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        def send_form_feedback(form_feedback):
+            flash(json.dumps(form_feedback))
+            return redirect(url_for(request.endpoint))
+
+        form_feedback = {}
+
+        if not email:
+            form_feedback['email'] = "Email is required."
+
+        if not password:
+            form_feedback['password'] = "Password is required."
+
+        if password != confirm_password:
+            form_feedback['confirm_password'] = "Confirmation password doesn't match."
+
+        if form_feedback:
+            return send_form_feedback(form_feedback)
+
         password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
         try:
@@ -59,21 +85,20 @@ def register():
             with Session.begin() as session:
                 user = User(
                     email=email,
-                    password_hash=password_hash.decode('utf-8')
+                    password_hash=password_hash.decode('utf-8') 
                 )
                 session.add(user)
+                session.flush([user])
+                session.refresh(user)
 
                 # OK
                 response = redirect(url_for('home'))
                 set_authorization_cookie(response, user)
                 return response, 200
 
-        except SQLAlchemyError:
-            # The user can't be inserted
-            flash("User already exists")
-            return redirect(url_for('auth.register'))
-    else:
-        return render_template('register.html')
+        except SQLAlchemyError as e:
+            print(e)
+            return send_form_feedback({ 'submit': "A user using this email already exists." })
 
 
 @blueprint.route('/login', methods=['GET', 'POST'])

@@ -8,7 +8,7 @@ from models import Op as SavedOp, User
 from db import Session
 import op as op_registry
 from datetime import datetime
-from sqlalchemy import inspect, and_
+from sqlalchemy import and_
 
 
 MAX_USERS_PER_CALL = 10
@@ -25,40 +25,40 @@ class Worker:
             for user in users:
                 remaining_op_count = MAX_OPERATIONS_PER_CALL
 
-                while remaining_op_count > 0:
-                    saved_op_list = session.query(SavedOp) \
+                have_to_wait = []
+
+                while remaining_op_count > 0:  # Every cron invocation the worker is permitted to execute a certain number of operations.
+                    saved_ops = session.query(SavedOp) \
                         .filter(and_(
                             SavedOp.id_user == user.id,
-                            SavedOp.processed_at.is_(None)
+                            SavedOp.id.notin_(have_to_wait), # The operation has been tried to execute but refused (probably due to rate limiter).
+                            SavedOp.processed_at.is_(None),  # The operation hasn't been processed yet.
+                            SavedOp.dependency.has(SavedOp.processed_at.isnot(None)), # The operation's parent has been processed.
                         )) \
                         .order_by(SavedOp.created_at.asc()) \
                         .limit(MAX_OPERATIONS_PER_CALL) \
                         .all()
 
-                    print(f"{len(saved_op_list)} operations found...")
+                    # Either no operation found or we need to wait the next cron invocation.
+                    if len(saved_ops) == 0:
+                        break
 
-                    for saved_op in saved_op_list:
+                    print(f"Trying to execute ${len(saved_ops)} operations...")
+
+                    for saved_op in saved_ops:
                         op = getattr(op_registry, saved_op.type)
 
-                        print(f"Operation #{saved_op.id} \"{saved_op.type}\" - scheduled at: {saved_op.created_at}")
+                        print(f"Executing \"{saved_op.type}\" (#{saved_op.id})...")
 
+                        # Tries to execute the current operation through the rate limiter.
                         if op.execute(session, user, saved_op):
                             saved_op.processed_at = datetime.now().isoformat()
                             session.flush([saved_op])
+                        else:  # If fails, it means the rate limiter stopped the operation, so we won't consider it for this cron invocation.
+                            have_to_wait.append(saved_op)
+                            print(f"Rate limited \"{saved_op.type}\". Will be retryed the next loop.")
 
-                            print(f"Operation #{saved_op.id} processed at: {saved_op.processed_at}")
-
-                            #saved_op.expire()
-                            #session.commit()
-                            #t = inspect(saved_op)
-                            #print(t.transient, t.pending, t.persistent, t.deleted, t.detached)
-                        else:
-                            print(f"Operation #{saved_op} skipped")
-
-                    if len(saved_op_list) == 0:
-                        break
-
-                    remaining_op_count -= len(saved_op_list)
+                    remaining_op_count -= len(saved_ops)
 
 
 if __name__ == '__main__':
