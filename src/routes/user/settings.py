@@ -1,14 +1,14 @@
 from functools import wraps
 from flask import Blueprint, redirect, url_for, render_template, flash, g, current_app, request, get_flashed_messages
 from flask.helpers import get_flashed_messages
-from backends.brickowl import Brickowl
+from backends.brickowl import BrickOwl
 from db import Session
 from routes.auth import auth_request
 from models import Op as SavedOp, User
 from components.paginator import Paginator
 from sqlalchemy import update
 from backends.bricklink import Bricklink, InvalidRequest as BricklinkInvalidRequest
-from backends.brickowl import Brickowl, InvalidRequest as BrickowlInvalidRequest
+from backends.brickowl import BrickOwl, InvalidRequest as BrickowlInvalidRequest
 import json
 
 
@@ -72,7 +72,7 @@ def approve_backends():
         except BricklinkInvalidRequest as e:
             print(f"Invalid Bricklink credentials:", e)
 
-        brickowl = Brickowl.from_user(user)
+        brickowl = BrickOwl.from_user(user)
         try:
             brickowl.get_colors()
             user.bo_credentials_approved = True

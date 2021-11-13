@@ -10,7 +10,7 @@
         <th>Status</th>
         <th>Parts ordered</th>
         <th>Bricklink ID</th>
-        <th>Brickowl ID</th>
+        <th>BrickOwl ID</th>
         <th>Applied</th>
         <th>Actions</th>
     </tr>
@@ -30,7 +30,7 @@
                     -
                 {% endif %}
             </td>
-            <td> <!-- Brickowl ID -->
+            <td> <!-- BrickOwl ID -->
                 {% if order.id_brickowl %}
                     <a href="https://www.brickowl.com/mystore/orders/history/{{ order.id_brickowl }}" target="_blank">{{ order.id_brickowl }}</a>
                 {% else %}

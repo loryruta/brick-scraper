@@ -120,7 +120,7 @@ async def add_bricklink_orders(user: User):
 
 
 # ------------------------------------------------------------------------------------------------
-# Brickowl
+# BrickOwl
 # ------------------------------------------------------------------------------------------------
 
 
@@ -226,7 +226,7 @@ async def add_brickowl_order(user: User, brickowl_order_id: str):
                 .returning(Order)
             ).first()
 
-    print(f"Order #{order.id} (Brickowl ID: #{brickowl_order_id}) {date_ordered}: {buyer_name} ({buyer_email})%s" % (" - already inserted" if order_exists else "",))
+    print(f"Order #{order.id} (BrickOwl ID: #{brickowl_order_id}) {date_ordered}: {buyer_name} ({buyer_email})%s" % (" - already inserted" if order_exists else "",))
 
     if not order_exists:
         with Session.begin() as session:

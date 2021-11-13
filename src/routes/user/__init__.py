@@ -4,7 +4,6 @@ from routes.auth import auth_request
 from models import Op as SavedOp, User
 from components.paginator import Paginator
 from sqlalchemy import update
-from op import bl_api_download_inventory, bl_api_get_inventories, save_sync
 from backends import bricklink, brickowl
 from routes.user.settings import blueprint as settings_blueprint
 

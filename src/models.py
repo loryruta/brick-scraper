@@ -49,15 +49,17 @@ class Op(Base):
     __tablename__ = 'op'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer)
+    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'))
     type = sa.Column(sa.String(64), nullable=False)
-    id_dependency = sa.Column(sa.Integer)
-    id_parent = sa.Column(sa.Integer)
+    id_dependency = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
+    id_parent = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
     params = sa.Column(JSONB, nullable=False)
     created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
+    invoked_at = sa.Column(sa.DateTime)
     processed_at = sa.Column(sa.DateTime)
 
-    dependency = relationship('Op', uselist=False)
+    dependency = relationship('Op', foreign_keys=[id_dependency], uselist=False)
+    parent = relationship('Op', foreign_keys=[id_parent], uselist=False)
     user = relationship('User')
 
 
