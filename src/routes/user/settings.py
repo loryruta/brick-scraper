@@ -10,12 +10,15 @@ from sqlalchemy import update
 from backends.bricklink import Bricklink, InvalidRequest as BricklinkInvalidRequest
 from backends.brickowl import BrickOwl, InvalidRequest as BrickowlInvalidRequest
 import json
+from typing import Optional
+import syncer
+from datetime import datetime
 
 
 blueprint = Blueprint('settings', __name__)
 
 
-def require_backends_approved(f):
+def require_remote_keys(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         with Session.begin() as session:
@@ -26,13 +29,8 @@ def require_backends_approved(f):
             if user.bl_credentials_approved and user.bo_credentials_approved:
                 return current_app.ensure_sync(f)(*args, **kwargs)
             else:
-                flash(json.dumps({ 'backends': { 'submit': 'Backends not approved.' }}))
                 return redirect(url_for('user.settings.view'))
     return wrapper
-
-
-#def require_syncer_active():
-#    pass
 
 
 @blueprint.route('/settings', methods=['GET'])
@@ -53,6 +51,13 @@ def approve_backends():
         user = session.query(User) \
             .filter_by(id=g.user_id) \
             .first()
+
+        # Before changing the API keys, all the pending operations for the current user must be deleted
+        # because the remote keys could be incorrect.
+        
+        session.query(SavedOp) \
+            .filter_by(id_user=user.id) \
+            .delete()
 
         user.bl_credentials_approved = False
         user.bo_credentials_approved = False
@@ -84,13 +89,32 @@ def approve_backends():
 
 @blueprint.route('/settings/syncer/toggle', methods=['POST'])
 @auth_request
-@require_backends_approved
 def toggle_syncer():
     with Session.begin() as session:
         user = session.query(User) \
             .filter_by(id=g.user_id) \
             .first()
-        user.syncer_enabled = not user.syncer_enabled
-        # TODO avoid syncer switch flood
+
+        if not (user.bl_credentials_approved and user.bo_credentials_approved):
+            flash(json.dumps({ 'backends': { 'submit': 'Backends not approved.' }}))
+            return redirect(url_for('user.settings.view'))
+
+        should_enable = not user.syncer_enabled
+        antiflood_interval = 2  # In seconds
+
+        if should_enable:
+            if user.syncer_enable_timestamp is None or \
+                (datetime.now() - user.syncer_enable_timestamp).seconds >= antiflood_interval:
+                syncer.start(session, user.id)
+
+                user.syncer_enabled = True
+                user.syncer_enable_timestamp = datetime.now().isoformat()
+            else:
+                # TODO flash error message
+                pass
+        else:
+            user.syncer_enabled = False
+            syncer.stop(user)
+
     return redirect(url_for("user.settings.view"))
 

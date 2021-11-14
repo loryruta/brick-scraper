@@ -6,9 +6,10 @@ load_dotenv()
 
 from models import Op as SavedOp
 from db import Session
-import op as op_registry
+from operations import *
+from op import Registry as OperationRegistry
 from datetime import datetime
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 
 
 class Worker:
@@ -25,10 +26,12 @@ class Worker:
                 .all()
 
             # For every user processes a certain number of operations.
-            for user_id in user_ids:
+            for (user_id,) in user_ids:
                 remaining_op_count = 100
 
                 have_to_wait = []
+
+                print(f"Processing op for user {user_id}...")
 
                 while remaining_op_count > 0:
                     saved_ops = session.query(SavedOp) \
@@ -36,7 +39,10 @@ class Worker:
                             SavedOp.id_user == user_id,
                             SavedOp.id.notin_(have_to_wait), # The operation has been tried to execute but refused (probably due to rate limiter).
                             SavedOp.invoked_at.is_(None),    # The operation hasn't been processed yet.
-                            SavedOp.dependency.has(SavedOp.processed_at.isnot(None)), # The operation's parent has been processed.
+                            or_(
+                                SavedOp.id_dependency.is_(None),
+                                SavedOp.dependency.has(SavedOp.processed_at.isnot(None)),
+                            )
                         )) \
                         .order_by(SavedOp.created_at.asc()) \
                         .limit(remaining_op_count) \
@@ -44,16 +50,15 @@ class Worker:
 
                     # Either no operation found or we need to wait the next cron invocation.
                     if len(saved_ops) == 0:
+                        print("No op found to be executed...")
                         break
 
-                    print(f"Trying to execute ${len(saved_ops)} operations...")
-
                     for saved_op in saved_ops:
-                        operation_definition = getattr(op_registry, saved_op.type)
+                        operation_class = OperationRegistry._by_name[saved_op.type]
                         
                         print(f"Executing \"{saved_op.type}\" (#{saved_op.id})...")
 
-                        executor = operation_definition.executor(session, saved_op)
+                        executor = operation_class.create_executor(session, saved_op)
 
                         executed = executor.execute()
 
@@ -62,7 +67,7 @@ class Worker:
                             session.flush([saved_op])
 
                             # If the operation hasn't added children operations, we can directly set the processed_at field.
-                            if not executor.children:
+                            if not executor.generated_children:
                                 saved_op.processed_at = datetime.now().isoformat()
                                 session.flush([saved_op])
                                 

@@ -40,7 +40,9 @@ class User(Base):
     bo_api_current_minute = sa.Column(sa.Integer)
 
     # Syncer
-    syncer_enabled = sa.Column(sa.Boolean, nullable=False, default=False)
+    syncer_enabled = sa.Column(sa.Boolean, default=False)
+    syncer_enable_timestamp = sa.Column(sa.DateTime)
+    syncer_running = sa.Column(sa.Boolean, default=False)
 
     orders = relationship('Order')
 
@@ -58,8 +60,8 @@ class Op(Base):
     invoked_at = sa.Column(sa.DateTime)
     processed_at = sa.Column(sa.DateTime)
 
-    dependency = relationship('Op', foreign_keys=[id_dependency], uselist=False)
-    parent = relationship('Op', foreign_keys=[id_parent], uselist=False)
+    dependency = relationship('Op', foreign_keys=[id_dependency], remote_side=[id])
+    parent = relationship('Op', foreign_keys=[id_parent], remote_side=[id])
     user = relationship('User')
 
 

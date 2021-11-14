@@ -13,34 +13,36 @@
         <th>Part image</th>
         <th>Part ID</th>
         <th>Part name</th>
-        <th>Color name</th>
-        <th>Color type</th>
+        <th>Color</th>
         <th>Condition</th>
         <th>Quantity</th>
-        <th>Parted out set</th>
+        <th>Remarks</th>
+        <th>Description</th>
     </tr>
 </thead>
 <tbody>
     {% for inv_part in inv_parts %}
-        <tr>
-            <td><img src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}" style="max-width: 250px; height: 70px"></td>
-            <th>
+        <tr class="align-middle">
+            <td><img class="item-img" src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}"></td>
+            <th> <!-- Part ID -->
                 {{ inv_part.part.id }}<br>
-                <img src="/public/img/bricklink.png"
-                    style="max-height: 35px; width: 20px"
-                    draggable="false">
+                <img class="bl-icon" src="/public/img/bricklink.png" draggable="false">
                 {% if inv_part.part.id_bo %}
-                    <img src="/public/img/brickowl.png"
-                        style="max-height: 35px; width: 20px"
-                        draggable="false">
+                    <img class="bo-icon" src="/public/img/brickowl.png" draggable="false">
                 {% endif %}
             </th>
             <td>{{ inv_part.part.name }}</td>
-            <td>{{ color.to_string(inv_part.color) }}</td>
-            <td>{{ inv_part.color.type }}</td>
+            <td> <!-- Color -->
+                {{ color.to_string(inv_part.color) }}<br>
+                <img class="bl-icon" src="/public/img/bricklink.png" draggable="false">
+                {% if inv_part.color.id_bo %}
+                    <img class="bo-icon" src="/public/img/brickowl.png" draggable="false">
+                {% endif %}
+            </td>
             <td>{{ inv_part.condition }}</td>
             <td>{{ inv_part.quantity }}</td>
-            <td>{{ inv_part.parted_out_set.id }}</td>
+            <td>{{ inv_part.user_remarks if inv_part.user_remarks else "-" }}</td>
+            <td>{{ inv_part.user_description if inv_part.user_description else "-" }}</td>
         </tr>
     {% endfor %}
 </tbody>

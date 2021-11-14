@@ -9,3 +9,18 @@ tr {
 th {
     text-transform: uppercase;
 }
+
+.item-img {
+    max-width: 200px;
+    height: 45px;
+}
+
+.bo-icon {
+    max-height: 35px;
+    width: 20px;
+}
+
+.bl-icon {
+    max-height: 35px;
+    width: 20px;
+}

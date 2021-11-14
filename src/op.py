@@ -10,20 +10,39 @@ import image_handler
 import os
 import urllib.request
 from urllib.error import HTTPError
+from functools import wraps
 
 
 class Registry:
-    op_list = []
+    _by_name = {}
 
-    def register(rate_limiter = rate_limiter.none):
-        def wrapper(op):
-            op.executor = lambda session, saved_op: \
-                op.Executor(session, saved_op, lambda: op.execute, rate_limiter)
+    def register(operation_class):
+        required_params = operation_class.params \
+            if hasattr(operation_class, 'params') else []
 
-            Registry.op_list.append(op)
-            return op
+        rate_limiter_ = operation_class.rate_limiter \
+            if hasattr(operation_class, 'rate_limiter') else rate_limiter.none
 
-        return wrapper
+        class DecoredOperation(Op):
+            def __init__(self, user_id, **params):
+                operation_name = operation_class.__name__
+                self.__class__.__name__ = operation_name
+
+                missing_params = \
+                    [key for key in required_params if key not in params.keys()]
+                if missing_params:
+                    raise TypeError(f"Operation {operation_class.__name__} misses required parameters:", missing_params)
+
+                super().__init__(user_id, **params)
+
+            @staticmethod
+            def create_executor(session, saved_op: SavedOp):
+                return Op.Executor(session, saved_op, operation_class, rate_limiter_)
+        
+        Registry._by_name[operation_class.__name__] = DecoredOperation
+        #print(f"Registered operation #{len(Registry._list)}: {operation_class.__name__}")
+
+        return DecoredOperation
 
 
 class Op:
@@ -45,31 +64,41 @@ class Op:
         return saved_op
 
     class Executor:
-        def __init__(self, session, saved_op: SavedOp, execute_function: Callable, rate_limiter):
+        def __init__(self, session, saved_op: SavedOp, operation_class, rate_limiter):
             self.session = session
             self.saved_op = saved_op
-            self.execute_function = execute_function
+            self.operation_class = operation_class
             self.rate_limiter = rate_limiter
             
             self.params = saved_op.params
             self.user = saved_op.user
 
+            self.generated_children = []
+
+
         def add_child(self, generator):
             def save(op: Op, dependency_id: Optional[int]):
                 return op.save(self.session, self.saved_op.id, dependency_id)
 
-            saved_ops = []
-            for params in generator:
-                saved_ops.append(
-                    save(**params)
-                )
-            return saved_ops
+            self.generated_children = []
+            params = next(generator)
+            try:
+                while True:
+                    saved_op = save(**params)
+                    self.generated_children.append(saved_op)
+
+                    params = generator.send(saved_op)
+            except StopIteration:
+                pass
+
+            return self.generated_children
+
 
         def execute(self):
             user = self.user
             rate_limiter = self.rate_limiter
             if rate_limiter.get_wait_time(user) == 0:
-                rate_limiter.issue(user, self.execute_function)
+                rate_limiter.issue(user, lambda: self.operation_class.execute(self))
                 return True
             else:
                 return False
@@ -82,19 +111,30 @@ def run_(operation: Op):
 
 
 def sync_(*operations: Op, dependency_id: Optional[int] = None):
-    """Enqueues a list of operations that will be called sequentially.
-    """
     last_dependency_id = dependency_id
     for operation in operations:
-        yield { 'op': operation, 'dependency_id': last_dependency_id, }
-        last_dependency_id = dependency_id
+        saved_op = (yield { 'op': operation, 'dependency_id': last_dependency_id, })
+        last_dependency_id = saved_op.id
 
 
 def async_(*operations: Op):
     """Enqwueues a list of operations that will be called in parallel.
     """ 
     for operation in operations:
-        yield { 'op': operation }
+        saved_op = yield { 'op': operation }
+
+
+def schedule(session, generator):
+    def save(op: Op, dependency_id: int):
+        return op.save(session, None, dependency_id)
+
+    params = next(generator)
+    try:
+        while True:
+            saved_op = save(**params)
+            params = generator.send(saved_op)
+    except StopIteration:
+        pass
 
 
 # ------------------------------------------------------------------------------------------------
@@ -102,12 +142,14 @@ def async_(*operations: Op):
 # ------------------------------------------------------------------------------------------------
 
 
-@Registry.register(rate_limiter=rate_limiter.bricklink)
+@Registry.register
 class bl_retrieve_part_image:
     params = [
         'color_id',
         'part_id'
     ]
+
+    rate_limiter = rate_limiter.bricklink
 
     def execute(self):
         color_id = self.saved_op.params['color_id']
@@ -134,8 +176,11 @@ class bl_retrieve_part_image:
         # TODO still not found
 
 
-@Registry.register(rate_limiter=rate_limiter.bricklink)
+@Registry.register
 class bl_retrieve_inventory_images:
+    params = []
+    rate_limiter = rate_limiter.bricklink
+
     def execute(self):
         session = self.session
         bricklink = Bricklink.from_user(self.user)
@@ -158,18 +203,30 @@ class bl_retrieve_inventory_images:
 # ------------------------------------------------------------------------------------------------
 
 
-@Registry.register(rate_limiter=rate_limiter.bricklink_api)
-class download_inventory:
+@Registry.register
+class download_bl_inventory:
+    params = []
+    rate_limiter = rate_limiter.bricklink_api
+
     def execute(self):
         session = self.session
-        bricklink = Bricklink.from_user(self.user)
-        for item in bricklink.get_inventories():
+
+        bl = Bricklink.from_user(self.user)
+        bl_inventories = bl.get_inventories()
+
+        for item in bl_inventories:
+            item_no = item['item']['no']
+            item_type = item['item']['type']
+            if item_type != 'PART':
+                print(f"WARNING: {item_type} will be ignored: {item_no}")
+                continue
+
             session.add(
                 InventoryPart(
                     id_user=self.user.id,
-                    id_part=item['item']['no'],
+                    id_part=item_no,
                     id_color=item['color_id'],
-                    condition=item['condition'],
+                    condition=item['new_or_used'],
                     quantity=item['quantity'],
                     user_remarks=item['remarks'],
                     user_description=item['description'],
@@ -199,11 +256,12 @@ class lookup_inventory_bo_ids:
         )
 
 
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
+@Registry.register
 class lookup_part_bo_id:
     params = [
         'part_id'
     ]
+    rate_limiter = rate_limiter.brickowl_api
 
     def execute(self):
         saved_op = self.saved_op
@@ -223,9 +281,10 @@ class lookup_part_bo_id:
         part.id_bo = boid
 
 
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
-class bo_upload_inventory:
+@Registry.register
+class upload_inventory_to_bo:
     params = []
+    rate_limiter = rate_limiter.brickowl_api
 
     def execute(self):
         session = self.session
@@ -309,16 +368,16 @@ class bo_upload_inventory:
                 print(f"Create part {inventory_part.id_bo} ({inventory_part.part.name}) - color: {inventory_part.color.name} ({inventory_part.color.id_bo})")
 
 
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
+@Registry.register
 class bo_inventory_create:
-    params = [
-    ]
+    params = []
+    rate_limiter = rate_limiter.brickowl_api
 
     def execute(self):
         pass
 
 
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
+@Registry.register
 class bo_inventory_update:
     params = [
         'lot_id',
@@ -327,14 +386,16 @@ class bo_inventory_update:
         'personal_note',
         'public_note',
     ]
+    rate_limiter = rate_limiter.brickowl_api
 
     def execute(self):
         pass
 
 
-@Registry.register(rate_limiter=rate_limiter.brickowl_api)
+@Registry.register
 class bo_inventory_delete:
     params = []  # TODO
+    rate_limiter = rate_limiter.brickowl_api
 
     def execute(self):
         pass
@@ -343,15 +404,4 @@ class bo_inventory_delete:
 # ------------------------------------------------------------------------------------------------
 # Local
 # ------------------------------------------------------------------------------------------------
-
-
-@Registry.register
-class local_clear_inventory:
-    def __init__(self, user_id: int):
-        self.__init__(user_id)
-
-    def on_execute(session, user: User, saved_op: SavedOp):
-        session.query(InventoryPart) \
-            .filter_by(id_user=user.id) \
-            .delete()
 

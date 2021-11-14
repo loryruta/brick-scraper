@@ -92,9 +92,14 @@
             <!-- ------------------------------------------------------------------------------------------------ -->
             <div class="pt-3 mb-2 border-bottom d-flex justify-content-between">
                 <h1 class="h3">Syncer <small class="fs-6">(Bricklink → BrickOwl)</small></h1>
-                <span class="{{ 'text-success' if user.syncer_enabled else 'text-danger' }}">
-                    {{ 'Enabled' if user.syncer_enabled else 'Disabled' }}
-                </span>
+                <div class="d-flex align-items-baseline">
+                    <span class="{{ 'text-success' if user.syncer_running else 'text-danger' }} pe-2"> <!-- Is running? -->
+                        {{ "Currently running" if user.syncer_running else "Currently not running" }}
+                    </span>
+                    <span class="{{ 'text-success' if user.syncer_enabled else 'text-danger' }} ps-2 border-start"> <!-- Is enabled? -->
+                        {{ 'Enabled' if user.syncer_enabled else 'Disabled' }}
+                    </span>
+                </div>
             </div>
 
             <form class="mb-2" method='POST' action='{{ url_for("user.settings.toggle_syncer") }}'>

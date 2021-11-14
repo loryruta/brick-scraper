@@ -4,12 +4,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-from models import BOColor, Part, Set, Color, Category
+from models import Part, Set, Color, Category
 from db import Session
 from sqlalchemy.dialects.postgresql import insert
 import time
 from typing import TextIO, List
-from backends import brickowl
+from backends.brickowl import BrickOwl
 
 
 def _read_bricklink_catalog_file(file: TextIO, headers: List[str]):
@@ -40,7 +40,7 @@ def _read_bricklink_catalog_file(file: TextIO, headers: List[str]):
 
     log()
     print("Done")
-        
+
 
 def add_colors(session):
     with open('tmp/colors.txt', 'rt') as f:
@@ -51,7 +51,7 @@ def add_colors(session):
                     .on_conflict_do_update(index_elements=['id'], set_=data)
                 )
 
-
+""" TODO
 def add_bo_colors(session):
     colors = brickowl.get_colors()
     for bo_id, color in colors.items():
@@ -79,7 +79,7 @@ def add_bo_colors(session):
                 .values(**data)
                 .on_conflict_do_update(index_elements=['id'], set_=data)
             )
-
+"""
 
 def add_categories(session):
     with open('tmp/categories.txt', 'rt') as f:
@@ -122,9 +122,9 @@ if __name__ == "__main__":
     with Session.begin() as session:
        add_colors(session)
 
-    print("Adding BO colors...")
-    with Session.begin() as session:
-        add_bo_colors(session)
+    #print("Adding BO colors...")
+    #with Session.begin() as session:
+    #    add_bo_colors(session)
 
     print("Adding categories...")
     with Session.begin() as session:
