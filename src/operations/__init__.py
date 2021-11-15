@@ -1,5 +1,5 @@
 
 
-from inventory import *
-from syncer import *
+from operations.inventory import *
+from operations.syncer import *
 

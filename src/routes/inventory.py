@@ -5,7 +5,6 @@ from db import Session
 from models import InventoryPart, User, Part
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-import bcrypt
 import jwt
 import os
 from datetime import datetime, timezone, timedelta
@@ -18,9 +17,9 @@ blueprint = Blueprint('inventory', __name__)
 
 @blueprint.route('/inventory/parts', methods=['GET'])
 @auth_request
-async def parts():
+def parts():
     with Session.begin() as session:
-        paginator = Paginator(InventoryPart)
+        paginator = Paginator(InventoryPart, per_page=100)
         inventory_parts = paginator.paginate(
             session.query(InventoryPart)
                 .where(InventoryPart.id_user == g.user_id)

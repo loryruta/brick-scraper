@@ -1,16 +1,10 @@
-from models import Color, Op as SavedOp, Part, User, InventoryPart
-from typing import Callable, Dict, Optional, Type
+from re import M
+from models import Color, Op as SavedOp, op_dependencies_table, Part, User, InventoryPart
+from typing import Callable, Dict, Optional, Type, List
 from backends.bricklink import Bricklink
 from backends.brickowl import BrickOwl
 import rate_limiter
-from db import Session
-from sqlalchemy import and_, func
-from sqlalchemy.dialects.postgresql import insert
-import image_handler
-import os
-import urllib.request
-from urllib.error import HTTPError
-from functools import wraps
+from sqlalchemy import and_, func, any_
 
 
 class Registry:
@@ -23,8 +17,8 @@ class Registry:
         rate_limiter_ = operation_class.rate_limiter \
             if hasattr(operation_class, 'rate_limiter') else rate_limiter.none
 
-        class DecoredOperation(Op):
-            def __init__(self, user_id, **params):
+        class DecoratedOperation(Op):
+            def __init__(self, **params):
                 operation_name = operation_class.__name__
                 self.__class__.__name__ = operation_name
 
@@ -33,35 +27,46 @@ class Registry:
                 if missing_params:
                     raise TypeError(f"Operation {operation_class.__name__} misses required parameters:", missing_params)
 
-                super().__init__(user_id, **params)
+                super().__init__(**params)
 
             @staticmethod
             def create_executor(session, saved_op: SavedOp):
                 return Op.Executor(session, saved_op, operation_class, rate_limiter_)
         
-        Registry._by_name[operation_class.__name__] = DecoredOperation
+        Registry._by_name[operation_class.__name__] = DecoratedOperation
         #print(f"Registered operation #{len(Registry._list)}: {operation_class.__name__}")
 
-        return DecoredOperation
+        return DecoratedOperation
 
 
 class Op:
-    def __init__(self, user_id: int, **params):
-        self.user_id = user_id
+    def __init__(self, **params):
         self.params = params
 
-    def save(self, session, parent_id: Optional[int] = None, dependency_id: Optional[int] = None):
+
+    def save(self, session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
         saved_op = SavedOp(
-            id_user=self.user_id,
+            id_user=user_id,
             type=self.__class__.__name__,
             id_parent=parent_id,
-            id_dependency=dependency_id,
             params=self.params,
         )
+        
         session.add(saved_op)
         session.flush([saved_op])
         session.refresh(saved_op)
+
+        if dependencies:
+            session.execute(
+                op_dependencies_table.insert() \
+                    .values([
+                        { 'id_op': saved_op.id, 'id_dependency': id_dep, }
+                        for id_dep in dependencies
+                    ])
+            )
+
         return saved_op
+
 
     class Executor:
         def __init__(self, session, saved_op: SavedOp, operation_class, rate_limiter):
@@ -73,212 +78,80 @@ class Op:
             self.params = saved_op.params
             self.user = saved_op.user
 
-            self.generated_children = []
 
+        def schedule_child(self, session, *tree, dependencies: List[int] = []):
+            for f in tree:
+                f(session, self.user.id, dependencies, self.saved_op.id)
 
-        def add_child(self, generator):
-            def save(op: Op, dependency_id: Optional[int]):
-                return op.save(self.session, self.saved_op.id, dependency_id)
-
-            self.generated_children = []
-            params = next(generator)
-            try:
-                while True:
-                    saved_op = save(**params)
-                    self.generated_children.append(saved_op)
-
-                    params = generator.send(saved_op)
-            except StopIteration:
-                pass
-
-            return self.generated_children
-
-
+        
         def execute(self):
             user = self.user
             rate_limiter = self.rate_limiter
-            if rate_limiter.get_wait_time(user) == 0:
-                rate_limiter.issue(user, lambda: self.operation_class.execute(self))
-                return True
-            else:
-                return False
+
+            wait_time = rate_limiter.get_wait_time(user)
+
+            if wait_time == 0:
+                rate_limiter.issue(
+                    user,
+                    lambda: self.operation_class.execute(self)
+                )
+
+            return wait_time
 
 
-def run_(operation: Op):
-    """Enqueues a single operation.
-    """ 
-    return sync_(operation)
+@Registry.register
+class group:
+    params = []
+    rate_limiter = rate_limiter.none
 
-
-def sync_(*operations: Op, dependency_id: Optional[int] = None):
-    last_dependency_id = dependency_id
-    for operation in operations:
-        saved_op = (yield { 'op': operation, 'dependency_id': last_dependency_id, })
-        last_dependency_id = saved_op.id
-
-
-def async_(*operations: Op):
-    """Enqwueues a list of operations that will be called in parallel.
-    """ 
-    for operation in operations:
-        saved_op = yield { 'op': operation }
-
-
-def schedule(session, generator):
-    def save(op: Op, dependency_id: int):
-        return op.save(session, None, dependency_id)
-
-    params = next(generator)
-    try:
-        while True:
-            saved_op = save(**params)
-            params = generator.send(saved_op)
-    except StopIteration:
+    def execute(self):
         pass
 
 
-# ------------------------------------------------------------------------------------------------
-# Bricklink (website)
-# ------------------------------------------------------------------------------------------------
+def run_(op: Op):
+    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+        subject = op.save(session, user_id, dependencies, parent_id)
+        return [subject]
+    return save
 
 
-@Registry.register
-class bl_retrieve_part_image:
-    params = [
-        'color_id',
-        'part_id'
-    ]
+def group_(*tree):
+    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+        subject = \
+            run_(group())(session, user_id, dependencies, parent_id)[0]
+        for f in tree:
+            f(session, user_id, dependencies, subject.id)
 
-    rate_limiter = rate_limiter.bricklink
-
-    def execute(self):
-        color_id = self.saved_op.params['color_id']
-        part_id = self.saved_op.params['part_id']
-
-        img_path = image_handler.get_part_image_storage_path(color_id, part_id)
-        img_url = image_handler.get_part_image_url(color_id, part_id)
-
-        if os.path.exists(img_path):
-            return
-
-        try:
-            os.makedirs(os.path.dirname(img_path))
-        except OSError:
-            pass
-
-        try:
-            bricklink_img_url = f"https://img.bricklink.com/ItemImage/PN/{color_id}/{part_id}.png"
-            urllib.request.urlretrieve(bricklink_img_url, img_path)
-            return img_url
-        except HTTPError:
-            pass
-
-        # TODO still not found
+        return [subject]
+    return save
 
 
-@Registry.register
-class bl_retrieve_inventory_images:
-    params = []
-    rate_limiter = rate_limiter.bricklink
-
-    def execute(self):
-        session = self.session
-        bricklink = Bricklink.from_user(self.user)
-        for item in bricklink.get_inventories():
-            session.add(
-                InventoryPart(
-                    id_user=self.user.id,
-                    id_part=item['item']['no'],
-                    id_color=item['color_id'],
-                    condition=item['condition'],
-                    quantity=item['quantity'],
-                    user_remarks=item['remarks'],
-                    user_description=item['description'],
-                )
-            )
+def sync_(*tree):
+    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+        last_deps = dependencies
+        for f in tree:
+            subjects = f(session, user_id, last_deps, parent_id)
+            last_deps = [subject.id for subject in subjects]
+    return save
 
 
-# ------------------------------------------------------------------------------------------------
-# Bricklink API
-# ------------------------------------------------------------------------------------------------
+def async_(*tree):
+    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+        subjects = tree
+        for f in tree:
+            f(session, user_id, dependencies, parent_id)
+        return subjects
+    return save
 
 
-@Registry.register
-class download_bl_inventory:
-    params = []
-    rate_limiter = rate_limiter.bricklink_api
-
-    def execute(self):
-        session = self.session
-
-        bl = Bricklink.from_user(self.user)
-        bl_inventories = bl.get_inventories()
-
-        for item in bl_inventories:
-            item_no = item['item']['no']
-            item_type = item['item']['type']
-            if item_type != 'PART':
-                print(f"WARNING: {item_type} will be ignored: {item_no}")
-                continue
-
-            session.add(
-                InventoryPart(
-                    id_user=self.user.id,
-                    id_part=item_no,
-                    id_color=item['color_id'],
-                    condition=item['new_or_used'],
-                    quantity=item['quantity'],
-                    user_remarks=item['remarks'],
-                    user_description=item['description'],
-                )
-            )
+def schedule(session, user_id: int, *tree, dependencies: List[int] = [], parent_id: Optional[int] = None):
+    for f in tree:
+        f(session, user_id, dependencies, parent_id)
 
 
 # ------------------------------------------------------------------------------------------------
 # BrickOwl API
 # ------------------------------------------------------------------------------------------------
-
-
-@Registry.register
-class lookup_inventory_bo_ids:
-    params = []
-
-    def execute(self):
-        parts = self.session.query(Part) \
-            .filter_by(id_user=self.user.id) \
-            .all()
-        
-        self.add_child(
-            async_(*[
-                lookup_part_bo_id(part_id=part.id)
-                for part in parts
-            ])
-        )
-
-
-@Registry.register
-class lookup_part_bo_id:
-    params = [
-        'part_id'
-    ]
-    rate_limiter = rate_limiter.brickowl_api
-
-    def execute(self):
-        saved_op = self.saved_op
-
-        part_id = saved_op.params['part_id']
-        part = self.session.query(Part) \
-            .filter_by(id=part_id) \
-            .first()
-
-        brickowl = BrickOwl.from_user(self.user)
-        boids = brickowl.catalog_id_lookup(part_id, 'Part')['boids']
-        if len(boids) == 0:
-            print(f"WARNING: Part \"{part.name}\" ({part.id}) couldn't be matched with BO.")
-            return
-        
-        boid = boids[0].split('-')[0]  # Trims color (after - on BOIDs)
-        part.id_bo = boid
 
 
 @Registry.register
@@ -293,35 +166,44 @@ class upload_inventory_to_bo:
         brickowl = BrickOwl.from_user(self.user)
 
         items = brickowl.get_inventory_list()
-        items = {
-            (item['boid'], item)
-            for item in items
-            if items['type'] == 'Part'
-        }
 
+        items_by_boid = {}
         for item in items:
+            boid = item['boid']
+
+            if item['type'] != 'Part':
+                print(f"WARNING: Ignored unsupported type: \"{item['type']}\" ({boid})")
+                continue
+
+            if boid in items_by_boid:
+                print(f"WARNING: Duplicated item: {boid}")  # TODO HANDLE!
+                continue
+                
+            items_by_boid[boid] = item
+
+        for boid, item in items_by_boid.items():
             lot_id = item['lot_id']
             bo_id = item['boid'].split('-')[0]
             color_id = item['boid'].split('-')[1]
-            condition = item['condition']
-            personal_note = item['personal_note']
+            condition = item['con']
+            personal_note = item['personal_note'],
 
             inventory_part = session.query(InventoryPart) \
                 .filter(and_(
                     InventoryPart.id_user == user.id,
-                    InventoryPart.part.id_bo == bo_id,
-                    InventoryPart.color.id_bo == color_id,
-                    InventoryPart.condition == condition[0].uppercase(),
-                    InventoryPart.user_remarks == personal_note
+                    InventoryPart.part.has(Part.id_bo == bo_id),
+                    InventoryPart.color.has(Color.id_bo == color_id),
+                    InventoryPart.condition == condition[0].upper(),
+                    InventoryPart.user_remarks == personal_note,
                 )) \
                 .first()
 
             # The BO part hasn't been found in the local inventory, we need to remove it.
             if inventory_part is None:
-                self.add_child(run_(
-                    bo_inventory_delete(lot_id=lot_id)
-                ))
-                print(f"Delete part {item['boid']}")
+                self.schedule_child(
+                    run_(bo_inventory_delete(lot_id=lot_id))
+                )
+                print(f"Delete part {item['boid']}")  # TODO DELETING WRONG PARTS!
             
             # If found, updates the non-identifier data to the local inventory's value.
             # Those are like: quantity, price, description...
@@ -345,10 +227,11 @@ class upload_inventory_to_bo:
 
         # Now takes all the parts that haven't been matched with remotes' and creates them.
         missing_inventory_parts = session.query(InventoryPart) \
+            .join(Part) \
+            .join(Color) \
             .filter(and_(
                 InventoryPart.id_user == user.id,
-                func.concat(InventoryPart.part.id_bo, '-', InventoryPart.color.id_bo) \
-                    .notin(items.keys())
+                func.concat(Part.id_bo, '-', Color.id_bo) == any_(list(items_by_boid.keys())),
             )) \
             .all()
         

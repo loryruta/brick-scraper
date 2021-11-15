@@ -11,7 +11,12 @@
         <th>ID</th>
         <th>Type</th>
         <th>Params</th>
+        <th>Parent</th>
+        <th>Dependencies</th>
         <th>Created at</th>
+        <th>Rate limited at</th>
+        <th>Rate limited for</th>
+        <th>Invoked at</th>
         <th>Processed at</th>
     </tr>
 </thead>
@@ -21,8 +26,17 @@
             <th>{{ op.id }}</th>
             <td>{{ op.type }}</td>
             <td>{{ op.params }}</td>
-            <td>{{ op.created_at.strftime("%d/%m/%Y %H:%M:%S") }}</td>
-            <td>{{ op.processed_at.strftime("%d/%m/%Y %H:%M:%S") if op.processed_at else "-" }}</td>
+            <td>{{ op.parent.type }} ({{ op.parent.id }})</td>
+            <td>
+                {% for dep in op.dependencies %}
+                    {{ dep.type }} ({{ dep.id }})
+                {% endfor %}
+            </td>
+            <td>{{ op.created_at or "-" }}</td>
+            <td>{{ op.rate_limited_at or "-" }}</td>
+            <td>{{ op.rate_limited_for or "-" }}</td>
+            <td>{{ op.invoked_at or "-" }}</td>
+            <td>{{ op.processed_at or "-" }}</td>
         </tr>
     {% endfor %}
 </tbody>

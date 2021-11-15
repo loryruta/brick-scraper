@@ -1,6 +1,6 @@
+from typing import List
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.sql.schema import ForeignKey, Table
 from sqlalchemy import func
 from enum import Enum
 from sqlalchemy.dialects.postgresql import JSONB
@@ -47,22 +47,46 @@ class User(Base):
     orders = relationship('Order')
 
 
+op_dependencies_table = sa.Table('op_dependencies', Base.metadata,
+    sa.Column('id_op', sa.Integer, sa.ForeignKey('op.id')),
+    sa.Column('id_dependency', sa.Integer, sa.ForeignKey('op.id')),
+    sa.PrimaryKeyConstraint('id_op', 'id_dependency')
+)
+
+
 class Op(Base):
     __tablename__ = 'op'
 
     id = sa.Column(sa.Integer, primary_key=True)
     id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'))
     type = sa.Column(sa.String(64), nullable=False)
-    id_dependency = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
     id_parent = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
     params = sa.Column(JSONB, nullable=False)
-    created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
+
+    # When the operation has been enqueued.
+    created_at = sa.Column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.now()
+    )
+
+    # When the operation has been invoked, same thing for processed for non-parent operations.
+    # For parent operations, this field must be set before invoking children operations. 
     invoked_at = sa.Column(sa.DateTime)
+
+    # When the operation has been fully processed, meaning it can eventually be deleted from the queued.
     processed_at = sa.Column(sa.DateTime)
 
-    dependency = relationship('Op', foreign_keys=[id_dependency], remote_side=[id])
-    parent = relationship('Op', foreign_keys=[id_parent], remote_side=[id])
+    rate_limited_at = sa.Column(sa.DateTime)    # When the operation was rate limited.
+    rate_limited_for = sa.Column(sa.BigInteger) # The amount of seconds for which the operation has been rate limited.
+
     user = relationship('User')
+    parent = relationship('Op', foreign_keys=[id_parent], remote_side=[id])
+    dependencies = relationship('Op',
+        secondary=op_dependencies_table,
+        primaryjoin= id == op_dependencies_table.c.id_op,
+        secondaryjoin= id == op_dependencies_table.c.id_dependency,
+    )
 
 
 class Color(Base):

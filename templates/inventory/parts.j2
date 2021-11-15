@@ -24,11 +24,12 @@
     {% for inv_part in inv_parts %}
         <tr class="align-middle">
             <td><img class="item-img" src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}"></td>
-            <th> <!-- Part ID -->
-                {{ inv_part.part.id }}<br>
+            <th>{{ inv_part.part.id }}<br>
                 <img class="bl-icon" src="/public/img/bricklink.png" draggable="false">
                 {% if inv_part.part.id_bo %}
-                    <img class="bo-icon" src="/public/img/brickowl.png" draggable="false">
+                    <a href="https://www.brickowl.com/search/catalog?query={{ inv_part.part.id_bo }}" target="_blank">
+                        <img class="bo-icon" src="/public/img/brickowl.png" title="{{ inv_part.part.id_bo }}" draggable="false">
+                    </a>
                 {% endif %}
             </th>
             <td>{{ inv_part.part.name }}</td>

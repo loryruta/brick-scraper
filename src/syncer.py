@@ -1,9 +1,10 @@
 
 from models import User
-from op import download_bl_inventory, upload_inventory_to_bo, schedule, sync_
+from op import upload_inventory_to_bo, schedule, sync_, async_, group_, run_
 from operations.syncer import * 
 from operations.inventory import *
 from db import Session
+from itertools import chain
 
 
 def is_running(user: User):
@@ -20,13 +21,19 @@ def set_enabled(user: User, enabled: bool):
 
 
 def start(session, user_id: int):
-    schedule(session,
-        sync_( 
-            syncer_begin(user_id),
-            clear_inventory(user_id),
-            download_bl_inventory(user_id),
-            #upload_inventory_to_bo(user_id),
-            syncer_end(user_id)
+    schedule(session, user_id,
+        sync_(
+            run_(syncer_begin()),
+            run_(clear_inventory()),
+            run_(download_bl_inventory()),
+            group_(
+                async_(
+                    run_(lookup_inventory_bo_ids()),
+                    run_(retrieve_inventory_bl_images()),
+                ),
+            ),
+            run_(upload_inventory_to_bo()),
+            run_(syncer_end()),
         )
     )
 
