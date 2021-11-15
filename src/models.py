@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import func
 from enum import Enum
 from sqlalchemy.dialects.postgresql import JSONB
+import os
 
 
 Base = declarative_base()
@@ -45,6 +46,26 @@ class User(Base):
     syncer_running = sa.Column(sa.Boolean, default=False)
 
     orders = relationship('Order')
+
+
+    def is_super_admin(self):
+        return \
+            self.email == os.environ['SUPER_ADMIN_USER_EMAIL']
+
+
+    def has_bl_credentials(self):
+        return \
+            self.bl_customer_key != None and \
+            self.bl_customer_secret != None and \
+            self.bl_token_value != None and \
+            self.bl_token_secret and \
+            self.bl_credentials_approved
+
+
+    def has_bo_credentials(self):
+        return \
+            self.bo_key != None and \
+            self.bo_credentials_approved
 
 
 op_dependencies_table = sa.Table('op_dependencies', Base.metadata,

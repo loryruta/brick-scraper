@@ -181,7 +181,7 @@ class upload_inventory_to_bo:
                 
             items_by_boid[boid] = item
 
-        for boid, item in items_by_boid.items():
+        for item in items:
             lot_id = item['lot_id']
             bo_id = item['boid'].split('-')[0]
             color_id = item['boid'].split('-')[1]
