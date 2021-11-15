@@ -1,10 +1,9 @@
 
 from models import User
-from op import upload_inventory_to_bo, schedule, sync_, async_, group_, run_
+from op import schedule, sync_, async_, group_, run_
 from operations.syncer import * 
 from operations.inventory import *
 from db import Session
-from itertools import chain
 
 
 def is_running(user: User):

@@ -5,12 +5,12 @@
 venv
 __pycache__
 
+# NodeJS
+node_modules
+
 # Project
 my.db
 cache.db
 .env
-
-node_modules
-
-tmp
 storage
+public

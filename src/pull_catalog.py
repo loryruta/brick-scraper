@@ -24,7 +24,7 @@ def _read_bricklink_catalog_file(file: TextIO, headers: List[str]):
     last_logged_at = 0
 
     for line in file:
-        fields = line.split("\t")
+        fields = line.rstrip().split("\t")
         if len(fields) < len(headers):
             continue
         
@@ -120,22 +120,22 @@ def add_sets(session):
 
 
 if __name__ == "__main__":
-    #print("Adding colors...")
-    #with Session.begin() as session:
-    #   add_colors(session)
+    print("Adding colors...")
+    with Session.begin() as session:
+       add_colors(session)
 
     print("Adding BO colors...")
     with Session.begin() as session:
         add_bo_colors(session)
 
-    #print("Adding categories...")
-    #with Session.begin() as session:
-    #   add_categories(session)
+    print("Adding categories...")
+    with Session.begin() as session:
+       add_categories(session)
 
-    #print("Adding parts...")
-    #with Session.begin() as session:
-    #    add_parts(session)
+    print("Adding parts...")
+    with Session.begin() as session:
+        add_parts(session)
 
-    #print("Adding sets...")
-    #with Session.begin() as session:
-    #    add_sets(session)
+    print("Adding sets...")
+    with Session.begin() as session:
+        add_sets(session)

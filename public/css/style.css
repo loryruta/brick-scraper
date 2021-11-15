@@ -1,26 +1,58 @@
 
+:root {
+    --main-color: #FDD835;
+    --secondary-color: #FBC02D;
+    --text-color: black;
+    --success-color: #B9F6CA;
 
-
-
-tr {
-    vertical-align: baseline !important;
+    --icon-width: 20px;
+    --icon-max-height: 50px;
 }
 
-th {
-    text-transform: uppercase;
+body {
+    color: black;
 }
 
-.item-img {
-    max-width: 200px;
-    height: 45px;
+header {
+    background-color: var(--main-color);
 }
 
-.bo-icon {
-    max-height: 35px;
-    width: 20px;
+nav {
+    background-color: var(--secondary-color);
+}
+
+nav .nav-link {
+    color: var(--text-color);
+}
+
+footer {
+    background-color: var(--secondary-color);
+}
+
+footer.developed-by {
+    font-weight: bold;
+}
+
+th, td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+table.inventory-parts td img.part-img {
+    max-height: 100px;
+    width: 50px
+}
+
+table.op-table tr.processed {
+    background-color: var(--success-color);
 }
 
 .bl-icon {
-    max-height: 35px;
-    width: 20px;
+    max-height: var(--icon-max-height);
+    width: var(--icon-width);
+}
+
+.bo-icon {
+    max-height: var(--icon-max-height);
+    width: var(--icon-width);
 }

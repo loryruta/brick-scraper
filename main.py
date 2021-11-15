@@ -18,7 +18,7 @@ log.setLevel(logging.WARNING)
 
 
 import os
-from flask import Flask
+from flask import Flask, g
 
 
 app = Flask(__name__,
@@ -52,7 +52,9 @@ app.register_blueprint(user_blueprint)
 @app.context_processor
 def env():
       return {
-            'env': os.environ
+            'env': os.environ,
+            'user_id': g.user_id,
+            'user_email': g.user_email,
       }
 
 

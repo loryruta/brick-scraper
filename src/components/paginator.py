@@ -1,6 +1,6 @@
 from db import Session
 from sqlalchemy.sql.expression import func
-from math import ceil
+from math import ceil, floor
 from flask import request
 
 
@@ -31,3 +31,28 @@ class Paginator:
 
     def get_next_page(self):
         return self.get_current_page() + 1
+
+    def get_view_pages(self):
+        middle_rad = 3
+        pages = []
+        cur_page = self.get_current_page()
+        last_page = self.pages_count - 1
+        start_page = max(cur_page - middle_rad, 0)
+        end_page = min(cur_page + middle_rad, last_page)
+
+        if start_page > 0:
+            pages.append(0)
+
+        if start_page > 1:
+            pages.append(-1)
+
+        for page in range(max(cur_page - middle_rad, 0), min(cur_page + middle_rad, last_page) + 1):
+            pages.append(page)
+
+        if end_page < last_page - 1:
+            pages.append(-1)
+
+        if end_page < last_page:
+            pages.append(last_page)
+
+        return pages

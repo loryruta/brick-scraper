@@ -217,6 +217,7 @@ class InventoryPart(Base):
     id_part = sa.Column(sa.String, sa.ForeignKey('parts.id'), nullable=False)
     id_color = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
     condition = sa.Column(sa.String(1), nullable=False, default='U')
+    unit_price = sa.Column(sa.Float, nullable=False)
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
     user_remarks = sa.Column(sa.String)
     user_description = sa.Column(sa.String)

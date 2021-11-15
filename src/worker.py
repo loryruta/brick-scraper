@@ -21,8 +21,8 @@ class Worker:
                 .filter(
                     SavedOp.invoked_at.is_(None),
                 ) \
-                .order_by(SavedOp.created_at.asc()) \
-                .distinct() \
+                .order_by(SavedOp.id_user.asc(), SavedOp.created_at.asc()) \
+                .distinct(SavedOp.id_user) \
                 .limit(10) \
                 .all()
 

@@ -1,26 +1,59 @@
 {% extends "_base.j2" %}
 
 {% block body %}
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar TODO -->
-        <div class='col-2 bg-light'>
-            <ul>
-                <li><a href="/inventory/history">Inventory history</a></li>
-                <li><a href="/parted_out_sets">Parted out sets</a></li>
-                <li><a href="/orders">Orders</a></li>
 
-                <li>Inventory
-                    <ul>
-                        <li><a href="/inventory/parts">Parts</a></li>
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <div class="collapse navbar-collapse justify-content-between" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/inventory/parts">
+                        Inventory <i class="fas fa-boxes ps-1"></i>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/settings">
+                        Settings <i class="fas fa-cogs ps-1"></i>
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Advanced
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li>
+                            <a class="dropdown-item" href="/cache/parts">Cached parts</a>
+                            <a class="dropdown-item" href="/cache/colors">Cached colors</a>
+                            <a class="dropdown-item" href="/cache/sets">Cached sets</a>
+                            <a class="dropdown-item" href="/cache/categories">Cached categories</a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="/admin/op">Operations</a>
+                        </li>
                     </ul>
                 </li>
             </ul>
         </div>
-        <!-- Content -->
-        <div class='col container'> 
-            {% block content %}{% endblock %}
-        </div>
     </div>
+</nav>
+
+<!--
+<nav class="navbar">
+    <div class="container-fluid">
+        <a class="nav-link" href="/inventory/parts">
+        </a>
+
+        <a class="nav-link" href="/orders">
+            Orders <i class="fas fa-shopping-cart ps-1"></i>
+        </a>
+        <a class="nav-link" href="/admin/op">
+            Operations <i class="fas fa-bars ps-1"></i>
+        </a>
+    </div>
+</nav>-->
+
+<div class="container-fluid">
+    {% block content %}{% endblock %}
 </div>
 {% endblock %}

@@ -6,20 +6,24 @@
     
     <!-- Bootstrap -->
     <link href="/public/css/bootstrap/bootstrap.min.css" rel="stylesheet" type="text/css" />
-    <script type="text/javascript" src="/public/js/bootstrap/bootstrap.min.js"></script>
-    
+
     <link href="/public/css/style.css" rel="stylesheet" type="text/css" />
-    <script type="text/javascript" src="/public/js/script.js"></script>
+    <!--<script type="text/javascript" src="/public/js/script.js"></script>-->
+
+    <!-- Font awesome -->
+    <script src="https://kit.fontawesome.com/9fe1eff927.js" crossorigin="anonymous"></script>
 
     <title>{{ env['APP_NAME'] }}</title>
 </head>
 <body>
 
 <!-- Header -->
-<header class="bg-light p-3 pt-1 pb-1">
-    <div class="d-flex justify-content-between">
-        <h1 class="h1">{{ env['APP_NAME'] }}</h1>
-        <div>
+<header class="p-3 pt-1 pb-1">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="d-inline">{{ env['APP_NAME'] }}</h1>
+        <div class='text-end'>
+            <span class="fw-bold">{{ user_email }} ({{ user_id }})</span><br>
+            <span>(<a href="/logout">Logout</a>)</span>
         </div>
     </div>
 </header>
@@ -28,9 +32,10 @@
 {% block body %}{% endblock %}
 
 <!-- Footer -->
-<footer class="bg-light p-3 pt-1 pb-1 text-end">
+<footer class="pe-3 pt-3 pb-3 text-end developed-by">
     Developed by <a href='https://github.com/loryruta' target="_blank">loryruta</a>
 </footer>
 
+<script type="text/javascript" src="/public/js/bootstrap/bootstrap.min.js"></script>
 </body>
 </html>

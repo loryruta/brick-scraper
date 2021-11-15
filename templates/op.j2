@@ -1,11 +1,15 @@
 {% extends 'base.j2' %}
 
+{% from "components/paginator.j2" import links as paginator_links %}
+
 {% block content %}
 
-{% from "components/paginator.j2" import links as paginator_links %}
-{{ paginator_links(paginator) }}
+<div class="mt-3 mb-3">
+    {{ paginator_links(paginator) }}
+</div>
 
-<table class="table table-sm">
+<!-- Medium -->
+<table class="table table-bordered op-table">
 <thead>
     <tr>
         <th>ID</th>
@@ -22,10 +26,14 @@
 </thead>
 <tbody>
     {% for op in op_list %}
-        <tr class="{{ 'table-success' if op.processed_at else '' }}">
+        <tr class="{{ 'processed' if op.processed_at else '' }}">
             <th>{{ op.id }}</th>
             <td>{{ op.type }}</td>
-            <td>{{ op.params }}</td>
+            <td> <!-- Params -->
+                <button class="btn">
+                    <i class="fas fa-code"></i>
+                </button>
+            </td>
             <td>{{ op.parent.type }} ({{ op.parent.id }})</td>
             <td>
                 {% for dep in op.dependencies %}
@@ -41,4 +49,9 @@
     {% endfor %}
 </tbody>
 </table>
+
+<div class="mb-3">
+    {{ paginator_links(paginator) }}
+</div>
+
 {% endblock %}
