@@ -51,11 +51,14 @@ app.register_blueprint(user_blueprint)
 
 @app.context_processor
 def env():
-      return {
-            'env': os.environ,
-            'user_id': g.user_id,
-            'user_email': g.user_email,
-      }
+      globals = {}
+
+      globals['env'] = os.environ
+
+      if hasattr(g, 'user_id'): globals['user_id'] = g.user_id
+      if hasattr(g, 'user_email'): globals['user_email'] = g.user_email
+
+      return globals
 
 
 @app.context_processor

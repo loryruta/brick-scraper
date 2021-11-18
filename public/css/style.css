@@ -33,8 +33,11 @@ footer.developed-by {
     font-weight: bold;
 }
 
+th {
+    text-transform: uppercase;
+}
+
 th, td {
-    text-align: center;
     vertical-align: middle;
 }
 

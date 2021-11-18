@@ -6,6 +6,25 @@
     <div class="container-fluid">
         <div class="collapse navbar-collapse justify-content-between" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Advanced
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li>
+                            <a class="dropdown-item" href="/cache/colors">Cached colors</a>
+                            <a class="dropdown-item" href="/cache/categories">Cached categories</a>
+                            <a class="dropdown-item" href="/cache/parts">Cached parts</a>
+                            <a class="dropdown-item" href="/cache/sets">Cached sets</a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="/admin/op">Operations</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link" href="/inventory/parts">
                         Inventory <i class="fas fa-boxes ps-1"></i>
@@ -15,23 +34,6 @@
                     <a class="nav-link" href="/settings">
                         Settings <i class="fas fa-cogs ps-1"></i>
                     </a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Advanced
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li>
-                            <a class="dropdown-item" href="/cache/parts">Cached parts</a>
-                            <a class="dropdown-item" href="/cache/colors">Cached colors</a>
-                            <a class="dropdown-item" href="/cache/sets">Cached sets</a>
-                            <a class="dropdown-item" href="/cache/categories">Cached categories</a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="/admin/op">Operations</a>
-                        </li>
-                    </ul>
                 </li>
             </ul>
         </div>
@@ -53,7 +55,5 @@
     </div>
 </nav>-->
 
-<div class="container-fluid">
-    {% block content %}{% endblock %}
-</div>
+{% block content %}{% endblock %}
 {% endblock %}

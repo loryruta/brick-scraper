@@ -6,80 +6,82 @@
 
 {% block content %}
 
-<div class="mt-3 mb-3">
-    {{ paginator_links(paginator) }}
-</div>
+<div class="container-fluid">
+    <div class="mt-3 mb-3">
+        {{ paginator_links(paginator) }}
+    </div>
 
-<table class="table table-bordered inventory-parts">
-<thead>
-    <tr>
-        <th>ID</th>
-        <th>Part image</th>
-        <th>Part ID</th>
-        <th>Part name</th>
-        <th>Color</th>
-        <th>Condition</th>
-        <th>Unit price</th>
-        <th>Quantity</th>
-        <th>Remarks</th>
-        <th>Description</th>
-    </tr>
-</thead>
-<tbody>
-    {% for inv_part in inv_parts %}
-        <tr class="align-middle">
-            <th>{{ inv_part.id }}</th>
-            <td class="text-center"> <!-- Part image -->
-                <img class="part-img" src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}">
-            </td>
-            <th> <!-- Part -->
-                {{ inv_part.part.id }}<br>
-                {{
-                    bl_icon(
-                        inv_part.part.id
-                    )
-                }}
-                {% if inv_part.part.id_bo %}
-                    {{
-                        bo_icon(
-                            inv_part.part.id_bo,
-                            "https://www.brickowl.com/search/catalog?query=" ~ inv_part.part.id_bo
-                        )
-                    }}
-                {% endif %}
-            </th>
-            <td>
-                {{ inv_part.part.name }}
-            </td>
-            <td> <!-- Color -->
-                {{ color.to_string(inv_part.color) }}<br>
-                {{
-                    bl_icon(
-                        inv_part.color.id
-                    )
-                }}
-                {% if inv_part.color.id_bo %}
-                    {{
-                        bo_icon(
-                            inv_part.color.id_bo,
-                        )
-                    }}
-                {% endif %}
-            </td>
-            <td class="text-center">{{ inv_part.condition }}</td>
-            <td class="text-center">{{ inv_part.unit_price }}</td>
-            <td class="text-center">{{ inv_part.quantity }}</td>
-            <td>{{ inv_part.user_remarks if inv_part.user_remarks else "-" }}</td>
-            <td class="text-muted">
-                {{ inv_part.user_description if inv_part.user_description else "-" }}
-            </td>
+    <table class="table table-striped inventory-parts">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Part image</th>
+            <th>Part ID</th>
+            <th>Part name</th>
+            <th>Color</th>
+            <th>Condition</th>
+            <th>Unit price</th>
+            <th>Quantity</th>
+            <th>Remarks</th>
+            <th>Description</th>
         </tr>
-    {% endfor %}
-</tbody>
-</table>
+    </thead>
+    <tbody>
+        {% for inv_part in inv_parts %}
+            <tr class="align-middle">
+                <th>{{ inv_part.id }}</th>
+                <td class="text-center"> <!-- Part image -->
+                    <img class="part-img" src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}">
+                </td>
+                <th> <!-- Part -->
+                    {{ inv_part.part.id }}<br>
+                    {{
+                        bl_icon(
+                            inv_part.part.id
+                        )
+                    }}
+                    {% if inv_part.part.id_bo %}
+                        {{
+                            bo_icon(
+                                inv_part.part.id_bo,
+                                "https://www.brickowl.com/search/catalog?query=" ~ inv_part.part.id_bo
+                            )
+                        }}
+                    {% endif %}
+                </th>
+                <td>
+                    {{ inv_part.part.name }}
+                </td>
+                <td> <!-- Color -->
+                    {{ color.to_string(inv_part.color) }}<br>
+                    {{
+                        bl_icon(
+                            inv_part.color.id
+                        )
+                    }}
+                    {% if inv_part.color.id_bo %}
+                        {{
+                            bo_icon(
+                                inv_part.color.id_bo,
+                            )
+                        }}
+                    {% endif %}
+                </td>
+                <td>{{ inv_part.condition }}</td>
+                <td>{{ inv_part.unit_price }}</td>
+                <td>{{ inv_part.quantity }}</td>
+                <td>{{ inv_part.user_remarks if inv_part.user_remarks else "-" }}</td>
+                <td>
+                    {{ inv_part.user_description if inv_part.user_description else "-" }}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+    </table>
 
-<div class="mb-3">
-    {{ paginator_links(paginator) }}
+    <div class="mb-3">
+        {{ paginator_links(paginator) }}
+    </div>
 </div>
 
 {% endblock %}

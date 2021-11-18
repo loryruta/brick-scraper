@@ -1,7 +1,9 @@
+from flask.helpers import url_for
 from db import Session
 from sqlalchemy.sql.expression import func
 from math import ceil, floor
 from flask import request
+import urllib.parse
 
 
 class Paginator:
@@ -56,3 +58,8 @@ class Paginator:
             pages.append(last_page)
 
         return pages
+
+    def build_page_url(self, page: int):
+        args = request.args.to_dict()
+        args['page'] = page
+        return request.path + "?" + urllib.parse.urlencode(args)

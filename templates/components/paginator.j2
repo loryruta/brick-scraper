@@ -3,17 +3,17 @@
     {% if paginator.items_count > 0 %}
         <div class="btn-group" role="group">
             <a class="btn btn-outline-primary {{ 'disabled' if paginator.is_first_page(paginator.get_current_page()) else '' }}"
-                href="{{ url_for(request.endpoint, page=paginator.get_previous_page()) }}">
+                href="{{ paginator.build_page_url(paginator.get_previous_page()) }}">
                 <
             </a>
             {% for page in paginator.get_view_pages() %}
                 <a class="btn btn-outline-primary {{ 'active' if paginator.get_current_page() == page else '' }} {{ 'disabled' if page < 0 else '' }}"
-                    href="{{ url_for(request.endpoint, page=page) }}">
+                    href="{{ paginator.build_page_url(page) }}">
                     {{ page + 1 if page >= 0 else "..." }}
                 </a>
             {% endfor %}
             <a class="btn btn-outline-primary {{ 'disabled' if paginator.is_last_page(paginator.get_current_page()) else '' }}"
-                href="{{ url_for(request.endpoint, page=paginator.get_next_page()) }}">
+                href="{{ paginator.build_page_url(paginator.get_next_page()) }}">
                 >
             </a>
         </div>

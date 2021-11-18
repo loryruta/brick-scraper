@@ -146,9 +146,9 @@ def login():
 
             if user:
                 if bcrypt.checkpw(password.encode(), user.password_hash.encode('utf-8')):
-                    response = redirect('/')
+                    response = redirect(url_for('inventory.parts'))
                     set_authorization_cookie(response, user)
-                    return response, 200
+                    return response
                 else:
                     pass
             else:
@@ -156,3 +156,8 @@ def login():
 
             return send_form_feedback({ 'submit': "Wrong credentials." })
 
+@blueprint.route('/logout', methods=['GET'])
+def logout():
+    response = redirect(url_for('auth.login'))
+    response.set_cookie('token', '')
+    return response
