@@ -7,15 +7,15 @@ import urllib.parse
 
 
 class Paginator:
-    def __init__(self, table, per_page=100, page=None):
-        with Session() as session:
-            self.per_page = per_page
-            self.items_count = session.query(func.count(table.id)).scalar()
-            self.pages_count = int(ceil(self.items_count / per_page))
-            self.page = page or self.get_current_page()
+    def __init__(self, src_query, per_page=100, page=None):
+        self.per_page = per_page
+        self.src_query = src_query
+        self.items_count = src_query.count()
+        self.pages_count = int(ceil(self.items_count / per_page))
+        self.page = page or self.get_current_page()
 
-    def paginate(self, query):
-        return query \
+    def paginate(self):
+        return self.src_query \
             .offset(self.page * self.per_page) \
             .limit(self.per_page)
 
