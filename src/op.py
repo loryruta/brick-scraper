@@ -1,10 +1,6 @@
-from re import M
-from models import Color, Op as SavedOp, op_dependencies_table, Part, User, InventoryPart
-from typing import Callable, Dict, Optional, Type, List
-from backends.bricklink import Bricklink
-from backends.brickowl import BrickOwl
+from models import Op as SavedOp, OpGroup, op_dependencies_table
+from typing import Optional, List
 import rate_limiter
-from sqlalchemy import and_, func, any_
 
 
 class Registry:
@@ -44,12 +40,12 @@ class Op:
         self.params = params
 
 
-    def save(self, session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+    def save(self, session, dependencies: List[int], parent_id: Optional[int], group_id: int):
         saved_op = SavedOp(
-            id_user=user_id,
             type=self.__class__.__name__,
             id_parent=parent_id,
             params=self.params,
+            id_group=group_id,
         )
         
         session.add(saved_op)
@@ -76,12 +72,14 @@ class Op:
             self.rate_limiter = rate_limiter
             
             self.params = saved_op.params
-            self.user = saved_op.user
+            self.user = saved_op.group.user
 
 
         def schedule_child(self, session, *tree, dependencies: List[int] = []):
             for f in tree:
-                f(session, self.user.id, dependencies, self.saved_op.id)
+                parent_id = self.saved_op.id_parent
+                group_id = self.saved_op.id_group
+                f(session, self.user.id, dependencies, parent_id, group_id)
 
         
         def execute(self):
@@ -100,7 +98,7 @@ class Op:
 
 
 @Registry.register
-class group:
+class Group:
     params = []
     rate_limiter = rate_limiter.none
 
@@ -109,42 +107,51 @@ class group:
 
 
 def run_(op: Op):
-    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
-        subject = op.save(session, user_id, dependencies, parent_id)
+    def save(session, dependencies: List[int], parent_id: Optional[int], group_id: int):
+        subject = op.save(session, dependencies, parent_id, group_id)
         return [subject]
     return save
 
 
 def group_(*tree):
-    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+    def save(session, dependencies: List[int], parent_id: Optional[int], group_id: int):
         subject = \
-            run_(group())(session, user_id, dependencies, parent_id)[0]
+            run_(Group())(session, dependencies, parent_id, group_id)[0]
         for f in tree:
-            f(session, user_id, dependencies, subject.id)
+            f(session, dependencies, subject.id, group_id)
 
         return [subject]
     return save
 
 
 def sync_(*tree):
-    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+    def save(session, dependencies: List[int], parent_id: Optional[int], group_id: int):
         last_deps = dependencies
         for f in tree:
-            subjects = f(session, user_id, last_deps, parent_id)
+            subjects = f(session, last_deps, parent_id, group_id)
             last_deps = [subject.id for subject in subjects]
     return save
 
 
 def async_(*tree):
-    def save(session, user_id: int, dependencies: List[int], parent_id: Optional[int]):
+    def save(session, dependencies: List[int], parent_id: Optional[int], group_id: int):
         subjects = tree
         for f in tree:
-            f(session, user_id, dependencies, parent_id)
+            f(session, dependencies, parent_id, group_id)
         return subjects
     return save
 
 
-def schedule(session, user_id: int, *tree, dependencies: List[int] = [], parent_id: Optional[int] = None):
+def schedule(session, user_id: int, group_name: str, *tree):
+    group = OpGroup(
+        id_user=user_id,
+        name=group_name,
+    )
+
+    session.add(group)
+    session.flush([group])
+    session.refresh(group)
+
     for f in tree:
-        f(session, user_id, dependencies, parent_id)
+        f(session, [], None, group.id)
 

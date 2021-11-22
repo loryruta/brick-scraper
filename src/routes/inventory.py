@@ -57,7 +57,7 @@ def parts():
             
         if search_params['quantity_min']:
             inv_parts_query = inv_parts_query \
-                .where(InventoryPart.quantity <= search_params['quantity_min'])
+                .where(InventoryPart.quantity >= search_params['quantity_min'])
 
         if search_params['quantity_max']:
             inv_parts_query = inv_parts_query \

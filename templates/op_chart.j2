@@ -1,0 +1,60 @@
+{% extends 'base.j2' %}
+
+{% block content %}
+<div class="container pt-3 pb-3">
+
+    <canvas id="opChart"></canvas>
+
+    <script>
+        (function () {
+            const context = document.getElementById('opChart').getContext('2d');
+            const chart = new Chart(context, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {% for op_group in op_groups %}
+                        {
+                            label: "{{ op_group.name }}",
+                            data: [
+                                {% for screenshot in op_group.screenshots %}
+                                {
+                                    x: new Date("{{ screenshot.when }}"),
+                                    y: {{ screenshot.op_count }},
+                                },
+                                {% endfor %}
+                            ],
+                            fill: false,
+                            tension: 0.1,
+                            borderColor: "#" + ((1 << 24) * Math.random() | 0).toString(16),
+                        },
+                        {% endfor %}
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute',
+                                displayFormats: {
+                                    minute: 'LT'
+                                },
+                            },
+                            min: moment().subtract(8, 'hours'),
+                            max: moment(),
+                        },
+                        y: {
+                            type: 'linear',
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                            },
+                        },
+                    }
+                }
+            });
+        })();
+    </script>
+
+</div>
+{% endblock %}

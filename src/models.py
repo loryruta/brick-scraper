@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import func
 from enum import Enum
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql.expression import func
 import os
 
 
@@ -53,6 +54,13 @@ class User(Base):
             self.email == os.environ['SUPER_ADMIN_USER_EMAIL']
 
 
+    @staticmethod
+    def get_super_admin(session):
+        return session.query(User) \
+            .filter(User.email == os.environ['SUPER_ADMIN_USER_EMAIL'],) \
+            .first()
+
+
     def has_bl_credentials(self):
         return \
             self.bl_customer_key != None and \
@@ -69,8 +77,8 @@ class User(Base):
 
 
 op_dependencies_table = sa.Table('op_dependencies', Base.metadata,
-    sa.Column('id_op', sa.Integer, sa.ForeignKey('op.id')),
-    sa.Column('id_dependency', sa.Integer, sa.ForeignKey('op.id')),
+    sa.Column('id_op', sa.Integer, sa.ForeignKey('op.id', ondelete='CASCADE')),
+    sa.Column('id_dependency', sa.Integer, sa.ForeignKey('op.id', ondelete='CASCADE')),
     sa.PrimaryKeyConstraint('id_op', 'id_dependency')
 )
 
@@ -79,10 +87,12 @@ class Op(Base):
     __tablename__ = 'op'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'))
+    #id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     type = sa.Column(sa.String(64), nullable=False)
-    id_parent = sa.Column(sa.Integer, sa.ForeignKey('op.id'))
+    id_parent = sa.Column(sa.Integer, sa.ForeignKey('op.id', ondelete='CASCADE'))
     params = sa.Column(JSONB, nullable=False)
+
+    id_group = sa.Column(sa.Integer, sa.ForeignKey('op_groups.id', ondelete='CASCADE'), nullable=False)
 
     # When the operation has been enqueued.
     created_at = sa.Column(
@@ -101,12 +111,39 @@ class Op(Base):
     rate_limited_at = sa.Column(sa.DateTime)    # When the operation was rate limited.
     rate_limited_for = sa.Column(sa.BigInteger) # The amount of seconds for which the operation has been rate limited.
 
-    user = relationship('User')
     parent = relationship('Op', foreign_keys=[id_parent], remote_side=[id])
+    group = relationship('OpGroup', viewonly=True)
     dependencies = relationship('Op',
         secondary=op_dependencies_table,
         primaryjoin= id == op_dependencies_table.c.id_op,
         secondaryjoin= id == op_dependencies_table.c.id_dependency,
+    )
+
+
+class OpGroup(Base):
+    __tablename__ = 'op_groups'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    name = sa.Column(sa.String, nullable=False)
+    created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
+
+    user = relationship('User')
+    screenshots = relationship('OpView', viewonly=True)
+    ops = relationship('Op', viewonly=True)
+
+
+class OpView(Base):
+    __tablename__ = 'op_view'
+
+    id_group = sa.Column(sa.Integer, sa.ForeignKey('op_groups.id', ondelete='CASCADE'))
+    when = sa.Column(sa.DateTime, server_default=func.now())
+    op_count = sa.Column(sa.Integer, nullable=False)
+
+    group = relationship('OpGroup', viewonly=True)
+
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('id_group', 'when'),
     )
 
 

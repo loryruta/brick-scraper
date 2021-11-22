@@ -3,7 +3,8 @@ from db import Session
 from sqlalchemy.sql.expression import func
 from math import ceil, floor
 from flask import request
-import urllib.parse
+from werkzeug.urls import url_encode
+from werkzeug.datastructures import MultiDict
 
 
 class Paginator:
@@ -60,6 +61,8 @@ class Paginator:
         return pages
 
     def build_page_url(self, page: int):
-        args = request.args.to_dict()
-        args['page'] = page
-        return request.path + "?" + urllib.parse.urlencode(args)
+        new_args = MultiDict(request.args.items(multi=True))
+        if 'page' in new_args:
+            new_args.pop('page')
+        new_args.add('page', page)
+        return request.path + "?" + url_encode(new_args)
