@@ -3,22 +3,29 @@
 {% block content %}
 <div class="container pt-3 pb-3">
 
-    <canvas id="opChart"></canvas>
+    <!-- Chart -->
+    <canvas id="chart"></canvas>
+
+    <!-- Display range selector -->
+    <div class="mt-3">
+        <select id="displayRangeSelector" class="w-25 form-select">
+        </select>
+    </div>
 
     <script>
-        (function () {
-            const context = document.getElementById('opChart').getContext('2d');
+        $(document).ready(function () {
+           const context = document.getElementById('chart').getContext('2d');
             const chart = new Chart(context, {
                 type: 'line',
                 data: {
                     datasets: [
-                        {% for op_group in op_groups %}
+                        {% for group in groups %}
                         {
-                            label: "{{ op_group.name }}",
+                            label: "{{ group.name }} " + moment.utc("{{ group.created_at }}").format('L LT'),
                             data: [
-                                {% for screenshot in op_group.screenshots %}
+                                {% for screenshot in group.screenshots[0:100] %}
                                 {
-                                    x: new Date("{{ screenshot.when }}"),
+                                    x: moment.utc("{{ screenshot.when }}").toDate(),
                                     y: {{ screenshot.op_count }},
                                 },
                                 {% endfor %}
@@ -32,17 +39,6 @@
                 },
                 options: {
                     scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'minute',
-                                displayFormats: {
-                                    minute: 'LT'
-                                },
-                            },
-                            min: moment().subtract(8, 'hours'),
-                            max: moment(),
-                        },
                         y: {
                             type: 'linear',
                             beginAtZero: true,
@@ -53,7 +49,45 @@
                     }
                 }
             });
-        })();
+
+            const displayRanges = [
+                { amount: 30, unit: 'minutes', format: 'LT', label: 'Last 30 minutes', },
+                { amount: 1, unit: 'hours', format: 'LT', label: 'Last hour', },
+                { amount: 2, unit: 'hours', format: 'LT', label: 'Last 2 hours', },
+                { amount: 1, unit: 'days', format: 'LT', label: 'Today', },
+                { amount: 2, unit: 'days', format: 'LT', label: 'Last 2 days', },
+            ];
+
+            $displayRangeSelector = $("#displayRangeSelector");
+
+            for (let displayRange of displayRanges) {
+                $displayRangeSelector.append(
+                    $("<option></option>")
+                        .text(displayRange.label)
+                );
+            }
+
+            function setDisplayRange(displayRange) {
+                chart.options.scales.x = {
+                    type: 'time',
+                    time: {
+                        unit: 'minute',
+                        displayFormats: {
+                            minute: displayRange.format,
+                        },
+                    },
+                    min: moment().subtract(displayRange.amount, displayRange.unit),
+                    max: moment(),
+                };
+                chart.update();
+            }
+
+            $displayRangeSelector.on('change', function () {
+                setDisplayRange(displayRanges[this.selectedIndex]);
+            });
+
+            setDisplayRange(displayRanges[0]);
+        });
     </script>
 
 </div>

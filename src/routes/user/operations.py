@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, g
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
 from db import Session
 from routes.auth import auth_request
@@ -35,14 +36,11 @@ def operations():
 @auth_request
 def operations_chart():
     with Session.begin() as session:
-        op_groups = session.query(OpGroup) \
-            .filter_by(id_user=g.user_id)  \
+        groups = session.query(OpGroup) \
+            .filter_by(id_user=g.user_id) \
             .all()
-        
-        time_values = [screenshot.when for screenshot in op_groups[0].screenshots]
-
+            
         return render_template('op_chart.j2',
-            op_groups=op_groups,
-            time_values=time_values,
+            groups=groups,
         )
 

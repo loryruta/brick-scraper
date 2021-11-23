@@ -127,9 +127,10 @@ class OpGroup(Base):
     id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     name = sa.Column(sa.String, nullable=False)
     created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
+    processed_at = sa.Column(sa.DateTime)
 
     user = relationship('User')
-    screenshots = relationship('OpView', viewonly=True)
+    screenshots = relationship('OpView', viewonly=True, order_by='desc(OpView.when)', lazy='dynamic')
     ops = relationship('Op', viewonly=True)
 
 
