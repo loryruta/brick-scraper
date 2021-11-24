@@ -1,10 +1,12 @@
-# Objective
+# BrickScraper
 
 The user has the possibility to have a set of LEGO stores (e.g.: Bricklink, BrickOwl, ...), all sharing
 the same physical inventory and the system must be able to keep the inventory of those
 updated based on orders originating from all stores.
 
-## Initialization
+## Syncing procedure
+
+### Initialization
 
 In first place, the system has to have a unfied view of the global inventory. In order
 to achieve it we need to visit the inventory of all stores configured, and we can have
@@ -30,7 +32,7 @@ We can make this process more user-friendly by letting the user decide **which i
 So, if STORE_1 is the master, items of STORE_1 will always replace parameters of items of STORE_2. 
 Still, it's useful to keep a log of inconsistensies (1., 2.).
 
-## Syncing
+### Order pulling & applying
 
 Now, having an unified view of the inventory, we can start the syncing activity. To avoid the user
 setting additional webhooks in order to "real-time" listen when an order is received, it's run a
@@ -94,9 +96,11 @@ To avoid this issue the sequantial procedure must go this way:
 
 **The initialization operation can be trated as a inventory update where the LOCAL_INVENTORY is empty.**
 
-**IMPORTANT NOTE: IT IS FORBIDDEN TO UPDATE SLAVE STORES INVENTORIES. ALL INVENTORY OPERATIONS MUST HAPPEN ON THE MASTER STORE INVENTORY.**
+**IMPORTANT NOTE:**
 
-## Handling items mismatchings
+**IT IS FORBIDDEN TO UPDATE SLAVE STORES INVENTORIES. ALL INVENTORY OPERATIONS MUST HAPPEN ON THE MASTER STORE INVENTORY.**
+
+### Handling items mismatchings
 
 It could happen that an ITEM_1 of STORE_1 can't be matched with a representation of STORE_2:
 
