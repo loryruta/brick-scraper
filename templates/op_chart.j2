@@ -19,25 +19,35 @@
                 type: 'line',
                 data: {
                     datasets: [
-                        {% for group in groups %}
+                        {% for entry in entries %}
                         {
-                            label: "{{ group.name }} " + moment.utc("{{ group.created_at }}").format('L LT'),
+                            label: "{{ entry['group'].type }} " + moment.utc("{{ entry['group'].created_at }}").local().format('L LT'),
                             data: [
-                                {% for screenshot in group.screenshots[0:100] %}
+                                {% for screenshot in entry['screenshots'] %}
                                 {
                                     x: moment.utc("{{ screenshot.when }}").toDate(),
                                     y: {{ screenshot.op_count }},
                                 },
                                 {% endfor %}
                             ],
-                            fill: false,
+                            fill: true,
                             tension: 0.1,
-                            borderColor: "#" + ((1 << 24) * Math.random() | 0).toString(16),
+                            backgroundColor: "{{ 'rgba(0, 255, 0, 0.3)' if entry['group'].processed_at else 'rgba(255, 0, 0, 0.3)' }}",
+                            borderColor: 'darkgray',
                         },
                         {% endfor %}
                     ]
                 },
                 options: {
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                boxWidth: 10,
+                                boxHeight: 10,
+                            }
+                        },
+                    },
                     scales: {
                         y: {
                             type: 'linear',
@@ -54,8 +64,6 @@
                 { amount: 30, unit: 'minutes', format: 'LT', label: 'Last 30 minutes', },
                 { amount: 1, unit: 'hours', format: 'LT', label: 'Last hour', },
                 { amount: 2, unit: 'hours', format: 'LT', label: 'Last 2 hours', },
-                { amount: 1, unit: 'days', format: 'LT', label: 'Today', },
-                { amount: 2, unit: 'days', format: 'LT', label: 'Last 2 days', },
             ];
 
             $displayRangeSelector = $("#displayRangeSelector");

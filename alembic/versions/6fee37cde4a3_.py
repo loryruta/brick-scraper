@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: 6014a738001c
+Revision ID: 6fee37cde4a3
 Revises: 
-Create Date: 2021-11-11 23:56:07.109205
+Create Date: 2021-11-24 15:35:59.422877
 
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '6014a738001c'
+revision = '6fee37cde4a3'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,25 +34,30 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(length=512), nullable=False),
     sa.Column('password_hash', sa.String(length=128), nullable=False),
-    sa.Column('bl_current_hour', sa.Integer(), nullable=True),
-    sa.Column('bl_current_hour_requests_count', sa.Integer(), nullable=True),
-    sa.Column('bl_api_current_day', sa.Integer(), nullable=True),
-    sa.Column('bl_api_current_day_requests_count', sa.Integer(), nullable=True),
-    sa.Column('bo_api_current_minute_requests_count', sa.Integer(), nullable=True),
-    sa.Column('bo_api_current_minute', sa.Integer(), nullable=True),
+    sa.Column('inventory_initialization_group_id', sa.Integer(), nullable=True),
+    sa.Column('syncer_group_id', sa.Integer(), nullable=True),
+    sa.Column('is_syncer_enabled', sa.Boolean(), nullable=True),
+    sa.Column('is_inventory_initialized', sa.Boolean(), nullable=True),
+    sa.Column('is_inventory_initializing', sa.Boolean(), nullable=True),
+    sa.Column('is_syncer_running', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
     op.create_table('op',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('id_user', sa.Integer(), nullable=True),
+    sa.Column('id_user', sa.Integer(), nullable=False),
     sa.Column('type', sa.String(length=64), nullable=False),
-    sa.Column('id_dependency', sa.Integer(), nullable=True),
+    sa.Column('id_parent', sa.Integer(), nullable=True),
     sa.Column('params', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('id_group', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('invoked_at', sa.DateTime(), nullable=True),
     sa.Column('processed_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['id_dependency'], ['op.id'], ),
-    sa.ForeignKeyConstraint(['id_user'], ['users.id'], ),
+    sa.Column('rate_limited_at', sa.DateTime(), nullable=True),
+    sa.Column('rate_limited_for', sa.BigInteger(), nullable=True),
+    sa.ForeignKeyConstraint(['id_group'], ['op.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['id_parent'], ['op.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['id_user'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('orders',
@@ -95,12 +100,37 @@ def upgrade():
     sa.ForeignKeyConstraint(['id_category'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('stores',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id_user', sa.Integer(), nullable=False),
+    sa.Column('type', sa.String(length=256), nullable=False),
+    sa.Column('is_master', sa.Boolean(), nullable=False),
+    sa.Column('is_approved', sa.Boolean(), nullable=False),
+    sa.ForeignKeyConstraint(['id_user'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('bl_stores',
+    sa.Column('id_store', sa.Integer(), nullable=False),
+    sa.Column('bl_customer_key', sa.String(), nullable=True),
+    sa.Column('bl_customer_secret', sa.String(), nullable=True),
+    sa.Column('bl_token_value', sa.String(), nullable=True),
+    sa.Column('bl_token_secret', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['id_store'], ['stores.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id_store')
+    )
+    op.create_table('bo_stores',
+    sa.Column('id_store', sa.Integer(), nullable=False),
+    sa.Column('bo_key', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['id_store'], ['stores.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id_store')
+    )
     op.create_table('inventory_parts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('id_user', sa.Integer(), nullable=False),
     sa.Column('id_part', sa.String(), nullable=False),
     sa.Column('id_color', sa.Integer(), nullable=False),
     sa.Column('condition', sa.String(length=1), nullable=False),
+    sa.Column('unit_price', sa.Float(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
     sa.Column('user_remarks', sa.String(), nullable=True),
     sa.Column('user_description', sa.String(), nullable=True),
@@ -109,6 +139,20 @@ def upgrade():
     sa.ForeignKeyConstraint(['id_user'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id_user', 'id_part', 'id_color', 'condition', 'user_remarks')
+    )
+    op.create_table('op_dependencies',
+    sa.Column('id_op', sa.Integer(), nullable=False),
+    sa.Column('id_dependency', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_dependency'], ['op.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['id_op'], ['op.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id_op', 'id_dependency')
+    )
+    op.create_table('op_view',
+    sa.Column('id_group', sa.Integer(), nullable=False),
+    sa.Column('when', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('op_count', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_group'], ['op.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id_group', 'when')
     )
     op.create_table('order_parts',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -131,7 +175,12 @@ def upgrade():
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('order_parts')
+    op.drop_table('op_view')
+    op.drop_table('op_dependencies')
     op.drop_table('inventory_parts')
+    op.drop_table('bo_stores')
+    op.drop_table('bl_stores')
+    op.drop_table('stores')
     op.drop_table('sets')
     op.drop_table('parts')
     op.drop_table('orders')

@@ -1,0 +1,31 @@
+
+<div>
+    <h2 class='pb-2 mb-3 border-bottom'>Syncer</h2>
+
+    <!-- TODO -->
+
+    <div class="d-flex justify-content-end pb-3">
+        <span class="ps-2 pe-2 border-end {{ 'text-success' if user.is_inventory_initialized else 'text-danger' }}">
+            {{ 'Inventory initialized' if user.is_inventory_initialized else 'Inventory not initialized' }}
+        </span>
+        <span class="ps-2 pe-2 border-end {{ 'text-muted' if user.is_inventory_initializing else 'text-muted' }}">
+            {{ 'Initializing inventory' if user.is_inventory_initializing else '-' }}
+        </span>
+        <span class="ps-2 pe-2 border-end {{ 'text-success' if user.is_syncer_enabled else 'text-danger' }}">
+            {{ 'Syncer enabled' if user.is_syncer_enabled else 'Syncer disabled' }}
+        </span>
+        <span class="ps-2 pe-2 {{ 'text-muted' if user.is_syncer_running else 'text-muted' }}">
+            {{ 'Syncer running' if user.is_syncer_running else '-' }}
+        </span>
+    </div>
+
+    <div class="text-md-start text-sm-center">
+        <form method="POST" action="{{ url_for('user.settings.stop_syncer') if user.is_syncer_enabled else url_for('user.settings.start_syncer')  }}">
+            <div>
+                <button class="btn {{ 'btn-danger' if user.is_syncer_enabled else 'btn-success' }}">
+                    {{ "Stop syncer" if user.is_syncer_enabled else "Start syncer" }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

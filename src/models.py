@@ -11,6 +11,60 @@ import os
 Base = declarative_base()
 
 
+class Store(Base):
+    __tablename__ = 'stores'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    type = sa.Column(sa.String(256), nullable=False)
+    
+    is_master = sa.Column(sa.Boolean, nullable=False, default=False)
+    is_approved = sa.Column(sa.Boolean, nullable=False, default=False)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'store',
+        'polymorphic_on': type,
+    }
+
+    @property
+    def display_name(self):
+        return {
+            'bl_store': "Bricklink",
+            'bo_store': "BrickOwl",
+        }[self.type]
+
+
+class BLStore(Store):
+    __tablename__ = 'bl_stores'
+
+    id_store = sa.Column(sa.Integer, sa.ForeignKey('stores.id', ondelete='CASCADE'), primary_key=True)
+
+    bl_customer_key = sa.Column(sa.String)
+    bl_customer_secret = sa.Column(sa.String)
+    bl_token_value = sa.Column(sa.String)
+    bl_token_secret = sa.Column(sa.String)
+
+    # TODO last rate limited at & for
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'bl_store',
+    }
+
+
+class BOStore(Store):
+    __tablename__ = 'bo_stores'
+
+    id_store = sa.Column(sa.Integer, sa.ForeignKey('stores.id', ondelete='CASCADE'), primary_key=True)
+
+    bo_key = sa.Column(sa.String)
+
+    # TODO last rate limited at & for
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'bo_store',
+    }
+
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -18,34 +72,16 @@ class User(Base):
     email = sa.Column(sa.String(512), unique=True, nullable=False)
     password_hash = sa.Column(sa.String(128), nullable=False)
 
-    # Bricklink credentials
-    bl_customer_key = sa.Column(sa.String)
-    bl_customer_secret = sa.Column(sa.String)
-    bl_token_value = sa.Column(sa.String)
-    bl_token_secret = sa.Column(sa.String)
+    inventory_initialization_group_id = sa.Column(sa.Integer)
+    syncer_group_id = sa.Column(sa.Integer)
 
-    bl_credentials_approved = sa.Column(sa.Boolean, nullable=False, default=False)
+    is_syncer_enabled = sa.Column(sa.Boolean)
+    is_inventory_initialized = sa.Column(sa.Boolean)
+    
+    is_inventory_initializing = sa.Column(sa.Boolean)
+    is_syncer_running = sa.Column(sa.Boolean)
 
-    # BrickOwl credentials
-    bo_key = sa.Column(sa.String)
-
-    bo_credentials_approved = sa.Column(sa.Boolean, nullable=False, default=False)
-
-    # Rate limiter
-    bl_current_hour = sa.Column(sa.Integer)
-    bl_current_hour_requests_count = sa.Column(sa.Integer)
-
-    bl_api_current_day = sa.Column(sa.Integer)
-    bl_api_current_day_requests_count = sa.Column(sa.Integer)
-
-    bo_api_current_minute_requests_count = sa.Column(sa.Integer)
-    bo_api_current_minute = sa.Column(sa.Integer)
-
-    # Syncer
-    syncer_enabled = sa.Column(sa.Boolean, default=False)
-    syncer_enable_timestamp = sa.Column(sa.DateTime)
-    syncer_running = sa.Column(sa.Boolean, default=False)
-
+    stores = relationship('Store')
     orders = relationship('Order')
 
 
@@ -87,12 +123,14 @@ class Op(Base):
     __tablename__ = 'op'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    #id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     type = sa.Column(sa.String(64), nullable=False)
     id_parent = sa.Column(sa.Integer, sa.ForeignKey('op.id', ondelete='CASCADE'))
     params = sa.Column(JSONB, nullable=False)
 
-    id_group = sa.Column(sa.Integer, sa.ForeignKey('op_groups.id', ondelete='CASCADE'), nullable=False)
+    # The group operation of which this operation has been originated.
+    # This ID must always refer to an anchestor of the current operation (and could be avoided implementing a recursive anchestor traverse).
+    id_group = sa.Column(sa.Integer, sa.ForeignKey('op.id', ondelete='CASCADE'))
 
     # When the operation has been enqueued.
     created_at = sa.Column(
@@ -111,8 +149,9 @@ class Op(Base):
     rate_limited_at = sa.Column(sa.DateTime)    # When the operation was rate limited.
     rate_limited_for = sa.Column(sa.BigInteger) # The amount of seconds for which the operation has been rate limited.
 
+    user = relationship('User')
     parent = relationship('Op', foreign_keys=[id_parent], remote_side=[id])
-    group = relationship('OpGroup', viewonly=True)
+    group = relationship('Op', foreign_keys=[id_group], remote_side=[id])
     dependencies = relationship('Op',
         secondary=op_dependencies_table,
         primaryjoin= id == op_dependencies_table.c.id_op,
@@ -120,31 +159,17 @@ class Op(Base):
     )
 
 
-class OpGroup(Base):
-    __tablename__ = 'op_groups'
-
-    id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    name = sa.Column(sa.String, nullable=False)
-    created_at = sa.Column(sa.DateTime, nullable=False, server_default=func.now())
-    processed_at = sa.Column(sa.DateTime)
-
-    user = relationship('User')
-    screenshots = relationship('OpView', viewonly=True, order_by='desc(OpView.when)', lazy='dynamic')
-    ops = relationship('Op', viewonly=True)
-
-
 class OpView(Base):
     __tablename__ = 'op_view'
 
-    id_group = sa.Column(sa.Integer, sa.ForeignKey('op_groups.id', ondelete='CASCADE'))
+    id_group = sa.Column(sa.Integer, sa.ForeignKey('op.id', ondelete='CASCADE'))
     when = sa.Column(sa.DateTime, server_default=func.now())
     op_count = sa.Column(sa.Integer, nullable=False)
 
-    group = relationship('OpGroup', viewonly=True)
+    #group = relationship('Op', foreign_keys=[id_group], remote_side=['id'], viewonly=True)
 
     __table_args__ = (
-        sa.PrimaryKeyConstraint('id_group', 'when'),
+        sa.PrimaryKeyConstraint('id_group', 'when'),  # id_user isn't necessair
     )
 
 

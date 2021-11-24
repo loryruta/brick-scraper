@@ -1,44 +1,132 @@
+from dotenv import load_dotenv
 
-from models import User
+
+load_dotenv()
+
+
+from models import User, Op as SavedOp
+from sqlalchemy import and_, or_
 from op import schedule, sync_, async_, group_, run_
-from operations.syncer import * 
-from operations.inventory import *
+from operations import Dummy
+from operations.syncer import _PullAndApplyOrdersGroup, _CheckInventoryUpdatesGroup, _InitializeInventoryGroup, _EndInventoryInitialization, _SyncerGroup, _SetSyncerRunning
 from db import Session
 
 
-def is_running(user: User):
-    return user.syncer_running
+def _pull_and_apply_orders():
+    return \
+        group_(_PullAndApplyOrdersGroup(), True,
+            sync_(
+                run_(Dummy()),  # TODO
+            )
+        )
 
 
-def is_enabled(user: User):
-    return user.syncer_enabled
+def _check_inventory_updates(pinned: bool):
+    return \
+        group_(_CheckInventoryUpdatesGroup(), pinned,
+            sync_(
+                run_(Dummy()),  # TODO
+            )
+        )
 
 
-def set_enabled(user: User, enabled: bool):
-    user.syncer_enabled = enabled
-    Session.object_session(user).flush([user])
+def _init_inventory(session, user: User):
+    schedule(session, user.id,
+        group_(_InitializeInventoryGroup(), True,
+            sync_(
+                _check_inventory_updates(pinned=False),
+                run_(_EndInventoryInitialization()),
+            ),
+        )
+    )
+    
+    user.is_inventory_initializing = True
+    session.flush([user])
 
 
 def start(session, user_id: int):
+    user = session.query(User) \
+        .filter_by(id=user_id) \
+        .first()
+
+    if user.is_syncer_enabled:
+        return False
+
+    _init_inventory(session, user)
+
+    user.is_syncer_enabled = True
+    session.flush([user])
+
+    return True
+
+
+def run(session, user_id: int):
+    user = session.query(User) \
+        .filter_by(id=user_id) \
+        .first()
+    
+    if not user.is_syncer_enabled:
+        print("Syncer must be enabled in order to run.")
+        return False
+
+    if not user.is_inventory_initialized:
+        print("Inventory isn't initialized. Syncer couldn't run.")
+        return False
+
+    if user.is_syncer_running:
+        print("Syncer is already running, avoiding possible overlap.")
+        return False
+
     schedule(session, user_id,
-        sync_(
-            run_(syncer_begin()),
-            run_(clear_inventory()),
-            run_(download_bl_inventory()),
-            group_(
-                async_(
-                    run_(lookup_inventory_bo_ids()),
-                    run_(retrieve_inventory_bl_images()),
-                ),
+        group_(_SyncerGroup(), False,
+            sync_(
+                _pull_and_apply_orders(),
+                _check_inventory_updates(pinned=True),
+                run_(_SetSyncerRunning(flag=False)),
             ),
-            run_(upload_inventory_to_bo()),
-            run_(syncer_end()),
-        )
+        ),
     )
 
+    user.is_syncer_running = True
+    session.flush([user])
 
-def stop(user: User):
-    # Stopping the syncer means that when an inventory upload should be issue it won't be issued.
-    # There's nothing to be cleared.
-    pass
+    return True
+
+
+def stop(session, user_id: int):
+    user = session.query(User) \
+        .filter_by(id=user_id) \
+        .first()
+
+    if not user.is_syncer_enabled:
+        return False
+
+    session.query(SavedOp) \
+        .filter(and_(
+            SavedOp.id_user == user.id,
+            or_(
+                SavedOp.id_group == user.inventory_initialization_group_id,
+                SavedOp.id_group == user.syncer_group_id,
+            ),
+        )) \
+        .delete()
+
+    user.inventory_initialization_group_id = None
+    user.syncer_group_id = None
+    user.is_inventory_initializing = False
+    user.is_inventory_initialized = False
+    user.is_syncer_enabled = False
+    user.is_syncer_running = False
+    session.flush([user])
+
+    return True
+
+
+if __name__ == "__main__":
+    with Session.begin() as session:
+        users = session.query(User) \
+            .all()
+
+        for user in users:
+            run(session, user.id)
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
 from db import Session
 from routes.auth import auth_request
-from models import Op as SavedOp, OpGroup, OpView
+from models import Op as SavedOp, OpView
 from components.paginator import Paginator
 from sqlalchemy.dialects.postgresql import INTERVAL
 
@@ -36,11 +36,27 @@ def operations():
 @auth_request
 def operations_chart():
     with Session.begin() as session:
-        groups = session.query(OpGroup) \
-            .filter_by(id_user=g.user_id) \
+        groups = session.query(SavedOp) \
+            .join(OpView, and_(
+                SavedOp.id_user == g.user_id,
+                OpView.id_group == SavedOp.id,
+            )) \
             .all()
-            
+
+        entries = []
+
+        for group in groups:
+            screenshots = session.query(OpView) \
+                .filter(OpView.id_group == group.id) \
+                .limit(100) \
+                .all()
+
+            entries.append({
+                'group': group,
+                'screenshots': screenshots,
+            })
+
         return render_template('op_chart.j2',
-            groups=groups,
+            entries=entries,
         )
 

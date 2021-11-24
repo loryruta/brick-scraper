@@ -1,0 +1,61 @@
+
+{% extends 'base.j2' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col pb-3">
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <!-- Account -->
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <div class="pt-3 mb-2 border-bottom">
+                <h2>Account</h2>
+            </div>
+
+            <form method='POST'> <!-- TODO -->
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type='email' name='email' class="form-control" value="{{ user.email }}" disabled>
+                </div>
+            </form>
+
+            <div class="mb-3 d-flex justify-content-end"> <!-- TODO -->
+                <button type='submit' class='btn btn-sm btn-danger'>
+                    Delete
+                </button>
+            </div>
+
+            <div class="mb-3">
+                {% include("settings/stores.j2") %}
+            </div>
+
+            <div class="mb-3">
+                {% include("settings/syncer.j2") %}
+            </div>
+
+            <!-- ------------------------------------------------------------------------------------------------
+            Syncer
+            <div class="pt-3 mb-2 border-bottom d-flex justify-content-between">
+                <h1 class="h3">Syncer <small class="fs-6">(Bricklink → BrickOwl)</small></h1>
+                <div class="d-flex align-items-baseline">
+                    <span class="{{ 'text-success' if user.syncer_running else 'text-danger' }} pe-2">
+                        {{ "Currently running" if user.syncer_running else "Currently not running" }}
+                    </span>
+                    <span class="{{ 'text-success' if user.syncer_enabled else 'text-danger' }} ps-2 border-start">
+                        {{ 'Enabled' if user.syncer_enabled else 'Disabled' }}
+                    </span>
+                </div>
+            </div>
+
+            <form class="mb-2" method='POST' action='{{ url_for("user.settings.toggle_syncer") }}'>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-warning">
+                        {{ "Disable" if user.syncer_enabled else "Enable" }}
+                    </button>
+                </div>
+            </form>
+        -->
+        </div>
+    </div>
+</div>
+{% endblock %}

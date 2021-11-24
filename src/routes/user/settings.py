@@ -4,7 +4,7 @@ from flask.helpers import get_flashed_messages
 from backends.brickowl import BrickOwl
 from db import Session
 from routes.auth import auth_request
-from models import Op as SavedOp, User
+from models import BLStore, BOStore, Op as SavedOp, Store, User
 from components.paginator import Paginator
 from sqlalchemy import update
 from backends.bricklink import Bricklink, InvalidRequest as BricklinkInvalidRequest
@@ -41,8 +41,8 @@ def view():
             .filter_by(id=g.user_id) \
             .first()
         form_feedback = json.loads(get_flashed_messages()[0]) if get_flashed_messages() else {}
-        return render_template('settings/backends.j2', user=user, form_feedback=form_feedback)
-  
+        return render_template('settings/index.j2', user=user, form_feedback=form_feedback)
+
 
 @blueprint.route('/settings/backends/approve', methods=['POST'])
 @auth_request
@@ -117,4 +117,85 @@ def toggle_syncer():
             syncer.stop(user)
 
     return redirect(url_for("user.settings.view"))
+
+
+@blueprint.route('/settings/stores', methods=['POST'])
+@auth_request
+def add_store():
+    with Session.begin() as session:
+        form = request.form
+        store_type = form.get('type')
+
+        if store_type == 'bl_store':
+            store = BLStore(
+                bl_customer_key=form.get('bl_customer_key'),
+                bl_customer_secret=form.get('bl_customer_secret'),
+                bl_token_value=form.get('bl_token_value'),
+                bl_token_secret=form.get('bl_token_secret'),
+            )
+
+        elif store_type == 'bo_store':
+            store = BOStore(
+                bo_key=form.get('bo_key'),
+            )
+
+        else:
+            raise RuntimeError(f"Unknown store type for: {store_type}")
+
+        store.id_user = g.user_id
+        store.type = store_type
+
+        session.add(store)
+        
+        syncer.stop(session, g.user_id)
+
+        return redirect(url_for('user.settings.view'))
+
+
+@blueprint.route('/settings/stores/<store>/set_master', methods=['POST'])
+@auth_request
+def set_master_store(store):
+    with Session.begin() as session:
+        session.query(Store) \
+            .filter_by(id_user=g.user_id) \
+            .update({
+                'is_master': Store.id == store
+            })
+            
+        syncer.stop(session, g.user_id)
+        
+        return redirect(url_for('user.settings.view'))
+
+
+@blueprint.route('/settings/stores/<store>/delete', methods=['POST'])
+@auth_request
+def del_store(store):
+    with Session.begin() as session:
+        session.query(Store) \
+            .filter_by(id=store) \
+            .delete()
+
+        syncer.stop(session, g.user_id)
+        
+        return redirect(url_for('user.settings.view'))
+
+
+@blueprint.route('/settings/syncer/start', methods=['POST'])
+@auth_request
+def start_syncer():
+    with Session.begin() as session:
+        
+        syncer.start(session, g.user_id)
+
+        return redirect(url_for('user.settings.view'))
+
+
+@blueprint.route('/settings/syncer/stop', methods=['POST'])
+@auth_request
+def stop_syncer():
+    with Session.begin() as session:
+
+        syncer.stop(session, g.user_id)
+
+        return redirect(url_for('user.settings.view'))
 

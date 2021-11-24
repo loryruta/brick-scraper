@@ -1,11 +1,22 @@
-from re import L
-from op import Registry, async_, run_
+from op import Registry, run_
 from models import InventoryPart, Part, Color
 import rate_limiter
 from backends.bricklink import Bricklink
 from backends.brickowl import BrickOwl
 from operations.local_storage import lookup_part_bo_id, retrieve_bl_part_image
 from sqlalchemy import and_
+
+
+@Registry.register
+class inventory_init_begin:
+    def execute(self):
+        pass
+
+
+@Registry.register
+class inventory_init_end:
+    def execute(self):
+        pass
 
 
 @Registry.register
