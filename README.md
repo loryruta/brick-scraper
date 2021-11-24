@@ -52,7 +52,7 @@ could be the following scenario:
 Supposing the order is coming from STORE_1, I need to update STORE_2, STORE_3 (...). The "update" consists of 
 decreasing the item quantity or delete the ordered item. 
 
-## Handling inventory updates
+### Handling inventory updates
 
 Inventory updates are detected by a periodical task that compare the local inventory against the remote
 inventory. The behavior of inventory updates can vary whether the updated store is the master store or the slave store.
