@@ -9,7 +9,7 @@ from db import Session
 from operations import *
 from op import Registry as OperationRegistry, async_, schedule
 from datetime import datetime
-from sqlalchemy import and_, func, or_
+from sqlalchemy import func, and_, or_
 from sqlalchemy.sql.operators import exists
 from sqlalchemy.dialects.postgresql import INTERVAL
 import random
@@ -58,7 +58,7 @@ def step():
                         ),
                         or_( # The rate limit time, if any, must be expired.
                             SavedOp.rate_limited_at.is_(None),
-                            SavedOp.rate_limited_at + SavedOp.rate_limited_for * func.cast("1 second", INTERVAL) <= func.now(),
+                            SavedOp.rate_limited_at + SavedOp.rate_limited_for * func.cast("1 SECOND", INTERVAL) <= func.now(),
                         )
                     )) \
                     .order_by(SavedOp.created_at.asc()) \
@@ -153,6 +153,17 @@ def screenshot():
             print(f"Screenshot(ed) group #{group_id}, currently with: {op_count} operation(s).")
 
 
+def delete_old_operations():
+    with Session.begin() as session:
+        session.query(SavedOp) \
+            .filter(and_(
+                SavedOp.id_parent.is_(None),
+                SavedOp.processed_at.isnot(None),
+                SavedOp.processed_at + func.cast("1 HOURS", INTERVAL) <= func.now(),
+            )) \
+            .delete(synchronize_session="fetch")
+
+
 def schedule_dummy_group(): # TODO TEST FUNCTION
     with Session.begin() as session:
         super_admin = User.get_super_admin(session)
@@ -169,7 +180,7 @@ if __name__ == '__main__':
     sub_parsers = parser.add_subparsers()
     sub_parsers.required = True
 
-    sub_cmds = [step, screenshot, schedule_dummy_group]
+    sub_cmds = [step, screenshot, schedule_dummy_group, delete_old_operations]
     for sub_cmd in sub_cmds:
         sub_parser = sub_parsers.add_parser(sub_cmd.__name__)
         sub_parser.set_defaults(func=sub_cmd)
