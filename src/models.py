@@ -15,7 +15,7 @@ class Store(Base):
     __tablename__ = 'stores'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     type = sa.Column(sa.String(256), nullable=False)
     
     is_master = sa.Column(sa.Boolean, nullable=False, default=False)
@@ -191,26 +191,45 @@ class Category(Base):
     name = sa.Column(sa.String, nullable=False)
 
 
-class Part(Base):
-    __tablename__ = 'parts'
+class Item(Base):
+    __tablename__ = 'items'
 
     id = sa.Column(sa.String, primary_key=True)
+    type = sa.Column(sa.String, primary_key=True)
+
     name = sa.Column(sa.String, nullable=False)
-    id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id'))
+    id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id', ondelete='CASCADE'))
 
     id_bo = sa.Column(sa.Integer)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'item',
+        'polymorphic_on': type,
+    }
+
+
+class Part(Item):
+    __tablename__ = 'parts'
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'part',
+    }
 
 
 class Set(Base):
     __tablename__ = 'sets'
 
-    id = sa.Column(sa.String, primary_key=True)
-    name = sa.Column(sa.String, nullable=False)
-    id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id'))
-    img_url = sa.Column(sa.String)
-    year = sa.Column(sa.Integer)
-    num_parts = sa.Column(sa.Integer)
-    last_modified_date: sa.Column(sa.DateTime)
+    __mapper_args__ = {
+        'polymorphic_identity': 'set',
+    }
+
+
+class Minifig(Base):
+    __tablename__ = 'sets'
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'minifig',
+    }
 
 
 class OrderStatus(Enum):
@@ -272,13 +291,16 @@ class OrderPart(Base):
     )
 
 
-class InventoryPart(Base):
-    __tablename__ = 'inventory_parts'
+class InventoryItem(Base):
+    __tablename__ = 'inventory_items'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'), nullable=False)
-    id_part = sa.Column(sa.String, sa.ForeignKey('parts.id'), nullable=False)
-    id_color = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    
+    item_id = sa.Column(sa.String, nullable=False)
+    item_type = sa.Column(sa.String, nullable=False)
+
+    color_id = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
     condition = sa.Column(sa.String(1), nullable=False, default='U')
     unit_price = sa.Column(sa.Float, nullable=False)
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
@@ -290,5 +312,6 @@ class InventoryPart(Base):
     user = relationship("User")
 
     __table_args__ = (
-        sa.UniqueConstraint('id_user', 'id_part', 'id_color', 'condition', 'user_remarks'),
+        sa.UniqueConstraint('user_id', 'item_id', 'item_type', 'color_id', 'condition', 'user_remarks'),
+        sa.ForeignKeyConstraint(['item_id', 'item_type'], ['items.id', 'items.type']),
     )
