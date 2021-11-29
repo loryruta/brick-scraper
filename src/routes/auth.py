@@ -107,7 +107,7 @@ def register():
                 # OK
                 response = redirect(url_for('home'))
                 set_authorization_cookie(response, user)
-                return response, 200
+                return response
 
         except SQLAlchemyError as e:
             print(e)
@@ -146,7 +146,7 @@ def login():
 
             if user:
                 if bcrypt.checkpw(password.encode(), user.password_hash.encode('utf-8')):
-                    response = redirect(url_for('inventory.parts'))
+                    response = redirect(url_for('inventory.items'))
                     set_authorization_cookie(response, user)
                     return response
                 else:

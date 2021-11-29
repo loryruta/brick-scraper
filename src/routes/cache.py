@@ -1,6 +1,6 @@
 from flask import request, Blueprint, redirect, url_for, render_template, flash, g, abort
 from db import Session
-from models import Color, Category, Part, Set, Base
+from models import Color, Category, Base
 from components.paginator import Paginator
 from routes.auth import auth_request
 

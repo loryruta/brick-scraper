@@ -2,7 +2,6 @@ from op import Registry, async_
 import rate_limiter
 from backends.brickowl import BrickOwl
 from models import Part
-import image_handler
 import os
 import urllib.request 
 from urllib.error import HTTPError
@@ -46,27 +45,5 @@ class retrieve_bl_part_image:
     rate_limiter = rate_limiter.bricklink
 
     def execute(self):
-        color_id = self.saved_op.params['color_id']
-        part_id = self.saved_op.params['part_id']
 
-        img_path = image_handler.get_part_image_storage_path(color_id, part_id)
-        img_url = image_handler.get_part_image_url(color_id, part_id)
-
-        if os.path.exists(img_path):
-            return
-
-        try:
-            os.makedirs(os.path.dirname(img_path))
-        except OSError:
-            pass
-
-        try:
-            bricklink_img_url = f"https://img.bricklink.com/ItemImage/PN/{color_id}/{part_id}.png"
-            print(f"Requesting image to BL: {bricklink_img_url}")
-            urllib.request.urlretrieve(bricklink_img_url, img_path)
-            return img_url
-        except HTTPError:
-            pass
-
-        # TODO still not found
 

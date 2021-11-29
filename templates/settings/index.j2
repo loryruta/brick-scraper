@@ -8,7 +8,7 @@
             <!-- ------------------------------------------------------------------------------------------------ -->
             <!-- Account -->
             <!-- ------------------------------------------------------------------------------------------------ -->
-            <div class="pt-3 mb-2 border-bottom">
+            <div class="mb-3">
                 <h2>Account</h2>
             </div>
 
@@ -25,36 +25,77 @@
                 </button>
             </div>
 
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <!-- Store -->
+            <!-- ------------------------------------------------------------------------------------------------ -->
             <div class="mb-3">
-                {% include("settings/stores.j2") %}
+                <h2>Stores</h2>
             </div>
 
-            <div class="mb-3">
-                {% include("settings/syncer.j2") %}
-            </div>
+            <form action="{{ url_for('user.settings.set_stores') }}" method="POST">
+                <!-- Bricklink -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between pb-1 mb-3 border-bottom">
+                        <h6>Bricklink</h6>
+                        {% if user.bo_credentials_approved %}
+                            <span class="text-success">Approved</span>
+                        {% else %}
+                            <span class="text-danger">Not approved</span>
+                        {% endif %}
+                    </div>
 
-            <!-- ------------------------------------------------------------------------------------------------
-            Syncer
-            <div class="pt-3 mb-2 border-bottom d-flex justify-content-between">
-                <h1 class="h3">Syncer <small class="fs-6">(Bricklink → BrickOwl)</small></h1>
-                <div class="d-flex align-items-baseline">
-                    <span class="{{ 'text-success' if user.syncer_running else 'text-danger' }} pe-2">
-                        {{ "Currently running" if user.syncer_running else "Currently not running" }}
-                    </span>
-                    <span class="{{ 'text-success' if user.syncer_enabled else 'text-danger' }} ps-2 border-start">
-                        {{ 'Enabled' if user.syncer_enabled else 'Disabled' }}
-                    </span>
+                    <div class="mb-3">
+                        <label class="form-label">Customer key</label>
+                        <input type='text' name='bl_customer_key' class="form-control" value="{{ user.bl_customer_key or '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Customer secret</label>
+                        <input type='text' name='bl_customer_secret' class="form-control" value="{{ user.bl_customer_secret or '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Token value</label>
+                        <input type='text' name='bl_token_value' class="form-control" value="{{ user.bl_token_value or '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Token secret</label>
+                        <input type='text' name='bl_token_secret' class="form-control" value="{{ user.bl_token_secret or '' }}">
+                    </div>
                 </div>
-            </div>
 
-            <form class="mb-2" method='POST' action='{{ url_for("user.settings.toggle_syncer") }}'>
+                <!-- BrickOwl -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between pb-1 mb-3 border-bottom">
+                        <h6>BrickOwl</h6>
+                        {% if user.bo_credentials_approved %}
+                            <span class="text-success">Approved</span>
+                        {% else %}
+                            <span class="text-danger">Not approved</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Key</label>
+                        <input type='text' name='bo_key' class="form-control" value="{{ user.bo_key or '' }}">
+                    </div>
+                </div>
+
                 <div class="text-center">
                     <button type="submit" class="btn btn-warning">
-                        {{ "Disable" if user.syncer_enabled else "Enable" }}
+                        Approve
                     </button>
                 </div>
             </form>
-        -->
+
+            <hr>
+
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <!-- Syncer -->
+            <!-- ------------------------------------------------------------------------------------------------ -->
+            <form action="{{ url_for('user.settings.set_stores') }}" method="POST">
+            </form>
         </div>
     </div>
 </div>

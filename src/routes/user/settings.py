@@ -4,7 +4,7 @@ from flask.helpers import get_flashed_messages
 from backends.brickowl import BrickOwl
 from db import Session
 from routes.auth import auth_request
-from models import BLStore, BOStore, Op as SavedOp, Store, User
+from models import Op as SavedOp, User
 from components.paginator import Paginator
 from sqlalchemy import update
 from backends.bricklink import Bricklink, InvalidRequest as BricklinkInvalidRequest
@@ -44,45 +44,51 @@ def view():
         return render_template('settings/index.j2', user=user, form_feedback=form_feedback)
 
 
-@blueprint.route('/settings/backends/approve', methods=['POST'])
+@blueprint.route('/settings/stores', methods=['POST'])
 @auth_request
-def approve_backends():
+def set_stores():
     with Session.begin() as session:
         user = session.query(User) \
             .filter_by(id=g.user_id) \
             .first()
-
-        # Before changing the API keys, all the pending operations for the current user must be deleted
-        # because the remote keys could be incorrect.
         
-        session.query(SavedOp) \
-            .filter_by(id_user=user.id) \
-            .delete()
+        bl_customer_key = request.form.get('bl_customer_key')
+        bl_customer_secret = request.form.get('bl_customer_secret')
+        bl_token_value = request.form.get('bl_token_value')
+        bl_token_secret = request.form.get('bl_token_secret')
+
+        bo_key = request.form.get('bo_key')
+        
+        user.bl_customer_key = bl_customer_key
+        user.bl_customer_secret = bl_customer_secret
+        user.bl_token_value = bl_token_value
+        user.bl_token_secret = bl_token_secret
+
+        user.bo_key = bo_key
 
         user.bl_credentials_approved = False
         user.bo_credentials_approved = False
-        user.syncer_enabled = False
 
-        user.bl_customer_key    = request.form.get('bl_customer_key')
-        user.bl_customer_secret = request.form.get('bl_customer_secret')
-        user.bl_token_value     = request.form.get('bl_token_value')
-        user.bl_token_secret    = request.form.get('bl_token_secret')
-        
-        user.bo_key = request.form.get('bo_key')
-
-        bricklink = Bricklink.from_user(user)
+        bl = Bricklink(
+            customer_key=bl_customer_key,
+            customer_secret=bl_customer_secret,
+            token_value=bl_token_value,
+            token_secret=bl_token_secret,
+        )
         try:
-            bricklink.get_inventories()
+            bl.get_colors()
             user.bl_credentials_approved = True
-        except BricklinkInvalidRequest as e:
-            print(f"Invalid Bricklink credentials:", e)
+        except BricklinkInvalidRequest as _:
+            pass
 
-        brickowl = BrickOwl.from_user(user)
+        bo = BrickOwl(
+            key=bo_key
+        )
         try:
-            brickowl.get_colors()
+            bo.get_colors()
             user.bo_credentials_approved = True
-        except BrickowlInvalidRequest as e:
-            print(f"Invalid BrickOwl credentials:", e)
+        except BrickowlInvalidRequest as _:
+            pass
 
     return redirect(url_for("user.settings.view"))
 
@@ -117,67 +123,6 @@ def toggle_syncer():
             syncer.stop(user)
 
     return redirect(url_for("user.settings.view"))
-
-
-@blueprint.route('/settings/stores', methods=['POST'])
-@auth_request
-def add_store():
-    with Session.begin() as session:
-        form = request.form
-        store_type = form.get('type')
-
-        if store_type == 'bl_store':
-            store = BLStore(
-                bl_customer_key=form.get('bl_customer_key'),
-                bl_customer_secret=form.get('bl_customer_secret'),
-                bl_token_value=form.get('bl_token_value'),
-                bl_token_secret=form.get('bl_token_secret'),
-            )
-
-        elif store_type == 'bo_store':
-            store = BOStore(
-                bo_key=form.get('bo_key'),
-            )
-
-        else:
-            raise RuntimeError(f"Unknown store type for: {store_type}")
-
-        store.id_user = g.user_id
-        store.type = store_type
-
-        session.add(store)
-        
-        syncer.stop(session, g.user_id)
-
-        return redirect(url_for('user.settings.view'))
-
-
-@blueprint.route('/settings/stores/<store>/set_master', methods=['POST'])
-@auth_request
-def set_master_store(store):
-    with Session.begin() as session:
-        session.query(Store) \
-            .filter_by(id_user=g.user_id) \
-            .update({
-                'is_master': Store.id == store
-            })
-            
-        syncer.stop(session, g.user_id)
-        
-        return redirect(url_for('user.settings.view'))
-
-
-@blueprint.route('/settings/stores/<store>/delete', methods=['POST'])
-@auth_request
-def del_store(store):
-    with Session.begin() as session:
-        session.query(Store) \
-            .filter_by(id=store) \
-            .delete()
-
-        syncer.stop(session, g.user_id)
-        
-        return redirect(url_for('user.settings.view'))
 
 
 @blueprint.route('/settings/syncer/start', methods=['POST'])

@@ -1,9 +1,7 @@
-from typing import Optional
+from typing import List, Optional
 import requests
 import json
 import os
-
-from models import User
 
 
 class InvalidRequest(Exception):
@@ -52,6 +50,16 @@ class BrickOwl:
         })
 
 
+    def catalog_bulk_lookup(self, boids: List[str]):
+        if len(boids) > 100:
+            raise InvalidRequest(f"Couldn't catalog/bulk_lookup more than 100 BOIDs, given: ${len(boids)}")
+
+        return self._make_request("GET", "catalog/bulk_lookup", params={
+            'key': self.key,
+            'boids': ",".join(boids),
+        })
+
+
     def catalog_id_lookup(self, id: str, type: str, id_type: Optional[str] = None):
         return self._make_request("GET", "catalog/id_lookup", params={
             'key': self.key,
@@ -67,23 +75,18 @@ class BrickOwl:
         })
 
 
-    def create_inventory(self, boid, color_id, quantity, price, condition):
+    def create_inventory(self, **args):
         return self._make_request("POST", "inventory/create", data={
             'key': self.key,
-            'boid': boid,
-            'color_id': color_id,
-            'quantity': quantity,
-            'price': price,
-            'condition': condition,
+            **args,
         })
 
 
-    def update_inventory(self, lot_id, absolute_quantity, price):
+    def update_inventory(self, lot_id, **args):
         return self._make_request("POST", "inventory/update", data={
             'key': self.key,
             'lot_id': lot_id,
-            'absolute_quantity': absolute_quantity,
-            'price': price,
+            **args,
         })
 
     
@@ -92,9 +95,4 @@ class BrickOwl:
             'key': self.key,
             'lot_id': lot_id,
         }) 
-
-
-    @staticmethod
-    def from_user(user: User):
-        return BrickOwl(user.bo_key)
 

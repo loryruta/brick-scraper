@@ -11,60 +11,6 @@ import os
 Base = declarative_base()
 
 
-class Store(Base):
-    __tablename__ = 'stores'
-
-    id = sa.Column(sa.Integer, primary_key=True)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    type = sa.Column(sa.String(256), nullable=False)
-    
-    is_master = sa.Column(sa.Boolean, nullable=False, default=False)
-    is_approved = sa.Column(sa.Boolean, nullable=False, default=False)
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'store',
-        'polymorphic_on': type,
-    }
-
-    @property
-    def display_name(self):
-        return {
-            'bl_store': "Bricklink",
-            'bo_store': "BrickOwl",
-        }[self.type]
-
-
-class BLStore(Store):
-    __tablename__ = 'bl_stores'
-
-    id_store = sa.Column(sa.Integer, sa.ForeignKey('stores.id', ondelete='CASCADE'), primary_key=True)
-
-    bl_customer_key = sa.Column(sa.String)
-    bl_customer_secret = sa.Column(sa.String)
-    bl_token_value = sa.Column(sa.String)
-    bl_token_secret = sa.Column(sa.String)
-
-    # TODO last rate limited at & for
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'bl_store',
-    }
-
-
-class BOStore(Store):
-    __tablename__ = 'bo_stores'
-
-    id_store = sa.Column(sa.Integer, sa.ForeignKey('stores.id', ondelete='CASCADE'), primary_key=True)
-
-    bo_key = sa.Column(sa.String)
-
-    # TODO last rate limited at & for
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'bo_store',
-    }
-
-
 class User(Base):
     __tablename__ = 'users'
 
@@ -72,16 +18,23 @@ class User(Base):
     email = sa.Column(sa.String(512), unique=True, nullable=False)
     password_hash = sa.Column(sa.String(128), nullable=False)
 
+    bl_customer_key = sa.Column(sa.String)
+    bl_customer_secret = sa.Column(sa.String)
+    bl_token_value = sa.Column(sa.String)
+    bl_token_secret = sa.Column(sa.String)
+    bl_credentials_approved = sa.Column(sa.Boolean)
+
+    bo_key = sa.Column(sa.String)
+    bo_credentials_approved = sa.Column(sa.Boolean)
+
     inventory_initialization_group_id = sa.Column(sa.Integer)
     syncer_group_id = sa.Column(sa.Integer)
 
     is_syncer_enabled = sa.Column(sa.Boolean)
     is_inventory_initialized = sa.Column(sa.Boolean)
-    
     is_inventory_initializing = sa.Column(sa.Boolean)
     is_syncer_running = sa.Column(sa.Boolean)
 
-    stores = relationship('Store')
     orders = relationship('Order')
 
 
@@ -181,7 +134,7 @@ class Color(Base):
     rgb = sa.Column(sa.String(6), nullable=False)
     type = sa.Column(sa.String(64), nullable=False)
 
-    id_bo = sa.Column(sa.Integer)
+    bo_id = sa.Column(sa.Integer)
 
 
 class Category(Base):
@@ -194,42 +147,16 @@ class Category(Base):
 class Item(Base):
     __tablename__ = 'items'
 
-    id = sa.Column(sa.String, primary_key=True)
-    type = sa.Column(sa.String, primary_key=True)
-
+    id = sa.Column(sa.String)
+    type = sa.Column(sa.String)
     name = sa.Column(sa.String, nullable=False)
-    id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id', ondelete='CASCADE'))
+    id_category = sa.Column(sa.Integer, sa.ForeignKey('categories.id', ondelete='CASCADE'))  # TODO category_id
 
-    id_bo = sa.Column(sa.Integer)
+    bo_id = sa.Column(sa.Integer)
 
-    __mapper_args__ = {
-        'polymorphic_identity': 'item',
-        'polymorphic_on': type,
-    }
-
-
-class Part(Item):
-    __tablename__ = 'parts'
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'part',
-    }
-
-
-class Set(Base):
-    __tablename__ = 'sets'
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'set',
-    }
-
-
-class Minifig(Base):
-    __tablename__ = 'sets'
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'minifig',
-    }
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('id', 'type'),
+    )
 
 
 class OrderStatus(Enum):
@@ -272,22 +199,25 @@ class Order(Base):
 
 
 class OrderPart(Base):
-    __tablename__ = 'order_parts'
+    __tablename__ = 'order_items'
 
     id = sa.Column(sa.Integer, primary_key=True)
     id_order = sa.Column(sa.Integer, sa.ForeignKey('orders.id'), nullable=False)
-    id_part = sa.Column(sa.String, sa.ForeignKey('parts.id'), nullable=False)
+    
+    item_id = sa.Column(sa.String, nullable=False)
+    item_type = sa.Column(sa.String, nullable=False)
+
     id_color = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
     condition = sa.Column(sa.String(1), nullable=False, default='U')
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
     user_remarks = sa.Column(sa.String)
     user_description = sa.Column(sa.String)
 
-    part = relationship('Part')
     color = relationship('Color')
 
     __table_args__ = (
-        sa.UniqueConstraint('id_order', 'id_part', 'id_color', 'condition', 'quantity', 'user_remarks', 'user_description'),
+        sa.UniqueConstraint('id_order', 'item_id', 'item_type', 'id_color', 'condition', 'quantity', 'user_remarks', 'user_description'),
+        sa.ForeignKeyConstraint(['item_id', 'item_type'], ['items.id', 'items.type']),
     )
 
 
@@ -300,14 +230,17 @@ class InventoryItem(Base):
     item_id = sa.Column(sa.String, nullable=False)
     item_type = sa.Column(sa.String, nullable=False)
 
-    color_id = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
+    color_id = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False, default=0)
+
     condition = sa.Column(sa.String(1), nullable=False, default='U')
     unit_price = sa.Column(sa.Float, nullable=False)
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
-    user_remarks = sa.Column(sa.String)
-    user_description = sa.Column(sa.String)
+    user_remarks = sa.Column(sa.String, nullable=False, default='')
+    user_description = sa.Column(sa.String, nullable=False, default='')
 
-    part = relationship("Part")
+    image_pulled = sa.Column(sa.Integer)
+
+    item = relationship('Item')
     color = relationship("Color")
     user = relationship("User")
 

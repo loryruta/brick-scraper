@@ -5,7 +5,7 @@ load_dotenv()
 
 
 from db import Session
-from models import Color, User, Order, OrderStatus, OrderPart, Part
+from models import Color, User, Order, OrderStatus, OrderPart
 import asyncio
 from sqlalchemy.dialects.postgresql import insert
 from backends.bricklink import Bricklink

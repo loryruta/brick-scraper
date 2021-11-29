@@ -16,7 +16,7 @@
     <div class="row">
     <div class="col">
     <div id="filterCollapse" class="container collapse pt-3">
-        <form method="GET" action="{{ url_for('inventory.parts') }}">
+        <form method="GET" action="{{ url_for('inventory.items') }}">
             <input type="hidden" name="page" value="{{ paginator.get_current_page() }}">
 
             <div class="mb-3">
@@ -85,8 +85,9 @@
     <table class="table table-striped inventory-parts">
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Part image</th>
+            <th>Lot ID</th>
+            <th>Item type</th>
+            <th>Item image</th>
             <th>Part ID</th>
             <th>Part name</th>
             <th>Color</th>
@@ -98,52 +99,58 @@
         </tr>
     </thead>
     <tbody>
-        {% for inv_part in inv_parts %}
+        {% for item in items %}
             <tr class="align-middle">
-                <th>{{ inv_part.id }}</th>
-                <td class="text-center"> <!-- Part image -->
-                    <img class="part-img" src="{{ get_part_image_url(inv_part.id_color, inv_part.id_part) }}">
+                <th>{{ item.id }}</th> <!-- Lot ID -->
+                <th>{{ item.item_type }}</th> <!-- Item type -->
+
+                <td class="text-center"> <!-- Item image -->
+                    <img class="part-img" src="{{ get_item_image_url(item.item_type, item.color_id, item.item_id) }}">
                 </td>
-                <th> <!-- Part -->
-                    {{ inv_part.part.id }}<br>
+
+                <!-- Item ID -->
+                <th>
+                    {{ item.item.id }}<br>
                     {{
-                        bl_icon(
-                            inv_part.part.id
-                        )
+                        bl_icon(item.item.id)
                     }}
-                    {% if inv_part.part.id_bo %}
+                    {% if item.item.bo_id != none %}
                         {{
                             bo_icon(
-                                inv_part.part.id_bo,
-                                "https://www.brickowl.com/search/catalog?query=" ~ inv_part.part.id_bo
+                                item.item.bo_id,
+                                "https://www.brickowl.com/search/catalog?query=" ~ item.item.bo_id
                             )
                         }}
                     {% endif %}
                 </th>
+
+                <!-- Item name -->
                 <td>
-                    {{ inv_part.part.name }}
+                    {{ item.item.name }}
                 </td>
-                <td> <!-- Color -->
-                    {{ color.to_string(inv_part.color) }}<br>
+
+                <!-- Color name -->
+                <td> 
+                    {{ color.to_string(item.color) }}<br>
                     {{
                         bl_icon(
-                            inv_part.color.id
+                            item.color.id
                         )
                     }}
-                    {% if inv_part.color.id_bo %}
+                    {% if item.color.bo_id != none %}
                         {{
                             bo_icon(
-                                inv_part.color.id_bo,
+                                item.color.bo_id,
                             )
                         }}
                     {% endif %}
                 </td>
-                <td>{{ inv_part.condition }}</td>
-                <td>{{ inv_part.unit_price }}</td>
-                <td>{{ inv_part.quantity }}</td>
-                <td>{{ inv_part.user_remarks if inv_part.user_remarks else "-" }}</td>
+                <td>{{ item.condition }}</td>
+                <td>{{ item.unit_price }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.user_remarks if item.user_remarks else "-" }}</td>
                 <td>
-                    {{ inv_part.user_description if inv_part.user_description else "-" }}
+                    {{ item.user_description if item.user_description else "-" }}
                 </td>
             </tr>
         {% endfor %}

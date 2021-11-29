@@ -33,7 +33,7 @@ from routes.cache import blueprint as cache_blueprint
 from routes.inventory import blueprint as inventory_blueprint
 #from routes.orders import blueprint as orders_blueprint
 from routes.user import blueprint as user_blueprint
-import image_handler
+import image_storage
 
 
 @app.route('/', methods=['GET'])
@@ -62,10 +62,10 @@ def env():
 
 
 @app.context_processor
-def get_part_image_url():
-      def _get_part_image_url(color_id: int, part_id: str):
-            return image_handler.get_part_image_url(color_id, part_id)
-      return dict(get_part_image_url=_get_part_image_url)
+def get_item_image_url():
+      def _get_item_image_url(item_type: str, color_id: str, item_id: str):
+            return image_storage.get_item_storage_url(item_type, color_id, item_id)
+      return dict(get_item_image_url=_get_item_image_url)
 
 
 if __name__ == '__main__':
