@@ -2,13 +2,13 @@
 {% macro bl_icon(title, url) -%}
     {% if url %}<a href="{{ url }}" target="_blank">{% endif %}
         <img class="bl-icon" src="/public/img/bl.png" title="{{ title }}" draggable="false">
-    {% if url %}<a href="{{ url }}" target="_blank">{% endif %}
+    {% if url %}</a>{% endif %}
     </a>
 {%- endmacro %}
 
 {% macro bo_icon(title, url) -%}
     {% if url %}<a href="{{ url }}" target="_blank">{% endif %}
         <img class="bo-icon" src="/public/img/bo.png" title="{{ title }}" draggable="false">
-    {% if url %}<a href="{{ url }}" target="_blank">{% endif %}
+    {% if url %}</a>{% endif %}
 {%- endmacro %}
 

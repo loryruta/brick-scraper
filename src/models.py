@@ -160,24 +160,30 @@ class Item(Base):
 
 
 class OrderStatus(Enum):
-    UNKNOWN = -1
-    PENDING = 0
-    PAID = 1
-    PROCESSING = 2
-    PROCESSED = 3
-    SHIPPED = 4
-    RECEIVED = 5
+    PENDING = "Pending"
+    PROCESSING = "Processing"
+    PAID = "Paid"
+    PACKED = "Packed"
+    SHIPPED = "Shipped"
+    RECEIVED = "Received"
+    ON_HOLD = "On Hold"
+    CANCELLED = "Cancelled"
+    PURGED = "Purged"
+    UNKNOWN = "Unknown"
 
 
 class Order(Base):
     __tablename__ = 'orders'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_user = sa.Column(sa.Integer, sa.ForeignKey('users.id'), nullable=False)
+
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('users.id'), nullable=False)
     buyer_name = sa.Column(sa.String, nullable=False)
     buyer_email = sa.Column(sa.String(512), nullable=False)
     date_ordered = sa.Column(sa.DateTime, nullable=False)
-    status = sa.Column(sa.Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+
+    status = sa.Column(sa.Enum(OrderStatus), nullable=False)
+
     shipping_method = sa.Column(sa.String)
     shipping_address_first_name = sa.Column(sa.String)
     shipping_address_last_name = sa.Column(sa.String)
@@ -188,35 +194,39 @@ class Order(Base):
     shipping_address_state = sa.Column(sa.String)
     shipping_address_postal_code = sa.Column(sa.String)
 
-    id_bl = sa.Column(sa.Integer)
-    id_bo = sa.Column(sa.Integer)
+    bl_id = sa.Column(sa.Integer)
+    bo_id = sa.Column(sa.Integer)
+
+    applied = sa.Column(sa.Boolean)
 
     __table_args__ = (
-        sa.UniqueConstraint(id_user, buyer_name, buyer_email, date_ordered),
+        sa.UniqueConstraint(user_id, buyer_name, buyer_email, date_ordered),
     )
 
-    parts = relationship('OrderPart')
+    items = relationship('OrderItem')
 
 
-class OrderPart(Base):
+class OrderItem(Base):
     __tablename__ = 'order_items'
 
     id = sa.Column(sa.Integer, primary_key=True)
-    id_order = sa.Column(sa.Integer, sa.ForeignKey('orders.id'), nullable=False)
+    order_id = sa.Column(sa.Integer, sa.ForeignKey('orders.id', ondelete="CASCADE"), nullable=False)
     
     item_id = sa.Column(sa.String, nullable=False)
     item_type = sa.Column(sa.String, nullable=False)
-
-    id_color = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
+    color_id = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False)
     condition = sa.Column(sa.String(1), nullable=False, default='U')
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
     user_remarks = sa.Column(sa.String)
     user_description = sa.Column(sa.String)
 
+    image_pulled = sa.Column(sa.Integer)
+    
     color = relationship('Color')
+    item = relationship('Item')
 
     __table_args__ = (
-        sa.UniqueConstraint('id_order', 'item_id', 'item_type', 'id_color', 'condition', 'quantity', 'user_remarks', 'user_description'),
+        sa.UniqueConstraint('order_id', 'item_id', 'item_type', 'color_id', 'condition', 'quantity', 'user_remarks', 'user_description'),
         sa.ForeignKeyConstraint(['item_id', 'item_type'], ['items.id', 'items.type']),
     )
 

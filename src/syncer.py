@@ -7,7 +7,7 @@ from sqlalchemy import select
 load_dotenv()
 
 
-from models import Color, InventoryItem as LocalInventoryItem, Item, User, Op as SavedOp
+from models import Color, InventoryItem as LocalInventoryItem, Item, Order, User, Op as SavedOp
 from sqlalchemy import and_, or_, null
 from db import Session
 from backends.bricklink import Bricklink as BricklinkAPI
@@ -265,6 +265,7 @@ class Syncer:
 
 
     def _initialize_inventory(self, session) -> None:
+        # Deletes the current inventory, pulls the inventory from BL and syncs the local inventory with BO inventory.
         session.query(LocalInventoryItem) \
             .filter_by(user_id=self.user_id) \
             .delete()

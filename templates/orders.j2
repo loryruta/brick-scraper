@@ -1,0 +1,58 @@
+{% extends "base.j2" %}
+
+{% block content %}
+
+
+<div class="container-fluid pt-3">
+    <div class="row">
+        <div class="col">
+            <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Buyer name</th>
+                    <th>Ordered at</th>
+                    <th>Status</th>
+                    <th>Parts ordered</th>
+                    <th>Bricklink ID</th>
+                    <th>BrickOwl ID</th>
+                    <th>Applied</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr style="background-color: {{ 'rgba(0, 255, 0, 0.2)' if is_order_satisfied(order.status) else 'rgba(255, 0, 0, 0.2)' }}">
+                        <th>{{ order.id }}</th>
+                        <td>{{ order.buyer_name }}</td>
+                        <td>{{ order.date_ordered.strftime("%d/%m/%Y %H:%M") }}</td>
+                        <td>{{ order.status.name }}</td>
+                        <td>{{ order.items|length }}</td>
+                        <td> <!-- Bricklink ID -->
+                            {% if order.bl_id %}
+                                <a href="https://www.bricklink.com/orderDetail.asp?ID={{ order.bl_id }}" target="_blank">{{ order.bl_id }}</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td> <!-- BrickOwl ID -->
+                            {% if order.bo_id %}
+                                <a href="https://www.brickowl.com/mystore/orders/history/{{ order.bo_id }}" target="_blank">{{ order.bo_id }}</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ "Yes" if order.applied_order else "No" }}</td>
+                        <td>
+                            <a class="btn btn-sm" href="{{ url_for('orders.show_items', order_id=order.id) }}">
+                                <i class="fas fa-list"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

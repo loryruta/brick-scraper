@@ -1,0 +1,110 @@
+{% extends "base.j2" %}
+
+{% from "components/paginator.j2" import links as paginator_links %}
+{% import "components/color.j2" as color %}
+{% from "components/icons.j2" import bl_icon, bo_icon %}
+
+{% block content %}
+
+<div class="container-fluid pt-3">
+
+<div class="mb-3">
+    <!-- Order title & status -->
+    <div class="d-flex justify-content-between">
+        <h2>
+            Order #({{ order.id }})
+
+            {% if order.bl_id != none %}
+                {{
+                    bl_icon(order.bl_id, "https://www.bricklink.com/orderDetail.asp?ID=" ~ order.bl_id)
+                }}
+            {% endif %}
+
+            {% if order.bo_id != none %}
+                {{
+                    bo_icon(order.bo_id, "https://www.brickowl.com/mystore/orders/history/" ~ order.bo_id)
+                }}
+            {% endif %}
+        </h2>
+        <span>{{ order.status.name }}</span>
+    </div>
+
+    <!-- Order info -->
+    <div>
+        <h6>{{ order.buyer_name }} ({{ order.buyer_email }})<h6>
+    </div>
+</div>
+
+<table class="table table-striped inventory-parts">
+<thead>
+    <tr>
+        <!--<th>Order item ID</th>-->
+        <th>Item type</th>
+        <th>Item image</th>
+        <th>Item ID</th>
+        <th>Item name</th>
+        <th>Color</th>
+        <th>Condition</th>
+        <th>Quantity</th>
+        <th>Remarks</th>
+        <th>Description</th>
+    </tr>
+</thead>
+<tbody>
+    {% for item in items %}
+        <tr class="align-middle">
+            <th>{{ item.item_type }}</th> <!-- Item type -->
+
+            <td class="text-center"> <!-- Item image -->
+                <img class="part-img" src="{{ get_item_image_url(item.item_type, item.color_id, item.item_id) }}">
+            </td>
+
+            <!-- Item ID -->
+            <th>
+                {{ item.item.id }}<br>
+                {{
+                    bl_icon(item.item.id)
+                }}
+                {% if item.item.bo_id != none %}
+                    {{
+                        bo_icon(
+                            item.item.bo_id,
+                            "https://www.brickowl.com/search/catalog?query=" ~ item.item.bo_id
+                        )
+                    }}
+                {% endif %}
+            </th>
+
+            <!-- Item name -->
+            <td>
+                {{ item.item.name }}
+            </td>
+
+            <!-- Color name -->
+            <td> 
+                {{ color.to_string(item.color) }}<br>
+                {{
+                    bl_icon(
+                        item.color.id
+                    )
+                }}
+                {% if item.color.bo_id != none %}
+                    {{
+                        bo_icon(
+                            item.color.bo_id,
+                        )
+                    }}
+                {% endif %}
+            </td>
+            <td>{{ item.condition }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.user_remarks if item.user_remarks else "-" }}</td>
+            <td>{{ item.user_description if item.user_description else "-" }}</td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+
+</div>
+
+{% endblock %}

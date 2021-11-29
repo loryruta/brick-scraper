@@ -31,7 +31,7 @@ app.secret_key = os.environ['APP_SECRET_KEY']
 from routes.auth import auth_request, blueprint as auth_blueprint
 from routes.cache import blueprint as cache_blueprint
 from routes.inventory import blueprint as inventory_blueprint
-#from routes.orders import blueprint as orders_blueprint
+from routes.orders import blueprint as orders_blueprint
 from routes.user import blueprint as user_blueprint
 import image_storage
 
@@ -45,7 +45,7 @@ def home():
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(cache_blueprint)
 app.register_blueprint(inventory_blueprint)
-#app.register_blueprint(orders_blueprint)
+app.register_blueprint(orders_blueprint)
 app.register_blueprint(user_blueprint)
 
 

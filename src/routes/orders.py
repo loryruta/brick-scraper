@@ -1,50 +1,49 @@
 from flask import request, Blueprint, redirect, url_for, render_template, flash, g, current_app
-import sqlalchemy
 from db import Session
-from models import InventoryPart, OrderPart, User, Part
-from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
-import bcrypt
-import jwt
-import os
-from datetime import datetime, timezone, timedelta
+from models import OrderItem, OrderStatus
 from routes.auth import auth_request
 from models import Order
 
 
-blueprint = Blueprint('user', __name__)
+blueprint = Blueprint('orders', __name__)
 
 
 @blueprint.route('/orders', methods=['GET'])
 @auth_request
-def orders():
+def show():
     with Session.begin() as session:
         orders = session.query(Order) \
-            .filter_by(id_user=g.user_id) \
-            .order_by(Order.date_ordered) \
+            .filter_by(user_id=g.user_id) \
+            .order_by(Order.date_ordered.desc()) \
             .all()
-        return render_template('orders.html.j2', orders=orders)
+        return render_template('orders.j2', orders=orders)
 
 
-@blueprint.route('/orders/<order_id>/parts', methods=['GET'])
+@blueprint.route('/orders/<order_id>/items', methods=['GET'])
 @auth_request
-def order_parts(order_id: int):
+def show_items(order_id: int):
     with Session.begin() as session:
-        order_parts = session.query(OrderPart) \
-                .filter_by(id_order=order_id) \
-                .order_by(OrderPart.id_part) \
+        order = session.query(Order) \
+            .filter_by(id=order_id) \
+            .first()
+
+        items = session.query(OrderItem) \
+                .filter_by(order_id=order_id) \
+                .order_by(OrderItem.item_id) \
                 .all()
-        return render_template('order_parts.html.j2', order_parts=order_parts)
+
+        return render_template('order_items.j2',
+            order=order,
+            items=items
+        )
 
 
-@blueprint.route('/order_syncer/attach', methods=['POST'])
-@auth_request
-def attach_order_syncer():
-    pass
-
-
-@blueprint.route('/order_syncer/detach', methods=['POST'])
-@auth_request
-def detach_order_syncer():
-    pass
+@blueprint.context_processor
+def is_order_satisfied():
+      def f(order_status: OrderStatus):
+            return \
+                order_status == OrderStatus.RECEIVED or \
+                order_status == OrderStatus.SHIPPED or \
+                order_status == OrderStatus.PURGED
+      return dict(is_order_satisfied=f)
 
