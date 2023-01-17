@@ -1,0 +1,8 @@
+services:
+  app:
+    volumes:
+      - .:/usr/app/
+    working_dir: /usr/app/
+    entrypoint: tail -f /dev/null
+    stdin_open: true
+    tty: true
