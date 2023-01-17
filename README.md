@@ -4,6 +4,15 @@ The user has the possibility to have a set of LEGO stores (e.g.: Bricklink, Bric
 the same physical inventory and the system must be able to keep the inventory of those
 updated based on orders originating from all stores.
 
+## How to run
+
+```
+docker-compose up -d db
+docker-compose up app
+```
+
+You can then connect to the web service at `localhost:5000`.
+
 ## Syncing procedure
 
 ### Initialization
