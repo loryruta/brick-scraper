@@ -69,5 +69,6 @@ def get_item_image_url():
 
 
 if __name__ == '__main__':
-      app.run(port=5000)
+      print(f"Listening on {os.environ['APP_HOST']}:{os.environ['APP_PORT']}...")
+      app.run(host=os.environ['APP_HOST'], port=os.environ['APP_PORT'])
 
