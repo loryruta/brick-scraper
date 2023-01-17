@@ -3,14 +3,15 @@
 
 # Python
 venv
+.venv
 __pycache__
 
 # NodeJS
 node_modules
 
 # Project
-my.db
-cache.db
+*.db
+*.db-journal
 .env
 storage
 public
