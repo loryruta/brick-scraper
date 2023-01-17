@@ -12,17 +12,11 @@ import time
 from typing import TextIO, List
 from backends.brickowl import BrickOwl
 import os
+import asyncio
+import time
 
 
 STORAGE_FOLDER = "storage"
-
-
-def _spec_item_type_to_bo(item_type: str):  # TODO centralize
-    return {
-        'part': 'Part',
-        'minifig': 'Minifigure',
-        'set': 'Set',
-    }[item_type]
 
 
 def _read_bricklink_catalog_file(file: TextIO, headers: List[str]):
@@ -66,7 +60,7 @@ def add_colors(session):
 
 
 def lookup_colors_bo_ids(session):
-    bo = BrickOwl(key=os.environ['BRICKOWL_KEY'])
+    bo = BrickOwl(key=os.environ['SUPERVISOR_BRICKOWL_KEY'])
     colors = bo.get_colors()
     for bo_id, color in colors.items():
         bl_ids = color['bl_ids']
@@ -142,49 +136,7 @@ def add_sets(session):
             )
 
 
-def lookup_items_bo_id():
-    while True:
-        with Session.begin() as session:
-            get_query = session.query(Item) \
-                .filter(and_(
-                    Item.bo_id.is_(None),
-                ))
-
-            remaining_count = get_query.count()
-            items = get_query \
-                .limit(100) \
-                .all()
-
-            if len(items) == 0:
-                break
-                
-            print(f"Remaining {remaining_count} items to update...")
-
-            solved_counter = 0
-            bo = BrickOwl(key=os.environ['BRICKOWL_KEY'])
-            for item in items:
-                boids = bo.catalog_id_lookup(
-                    id=item.id,
-                    type=_spec_item_type_to_bo(item.type),
-                )['boids']
-
-                if len(boids) == 0:
-                    print(f"WARNING: Couldn't find BO ID for item ({item.id}): {item.name} ({item.type})")
-                    item.bo_id = -1
-                else:
-                    boid: str = boids[0]
-                    boid = boid.split('-')[0]
-
-                    item.bo_id = boid
-
-                    solved_counter += 1
-
-            print(f"Found BO ID for {solved_counter} items")
-
-    print("Done")
-
-
-def main():
+async def main():
     print("Adding colors...")
     with Session.begin() as session:
        add_colors(session)
@@ -210,9 +162,7 @@ def main():
         add_sets(session)
 
     print("Looking up items BO ID...")
-    lookup_items_bo_id()
 
 
 if __name__ == "__main__":
-    lookup_items_bo_id()
-    
+    asyncio.run(main())
