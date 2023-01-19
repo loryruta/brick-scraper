@@ -33,6 +33,7 @@ from routes.cache import blueprint as cache_blueprint
 from routes.inventory import blueprint as inventory_blueprint
 from routes.orders import blueprint as orders_blueprint
 from routes.user import blueprint as user_blueprint
+from routes.catalog import blueprint as catalog_blueprint
 import image_storage
 
 
@@ -47,6 +48,7 @@ app.register_blueprint(cache_blueprint)
 app.register_blueprint(inventory_blueprint)
 app.register_blueprint(orders_blueprint)
 app.register_blueprint(user_blueprint)
+app.register_blueprint(catalog_blueprint)
 
 
 @app.context_processor

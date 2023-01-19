@@ -1,0 +1,122 @@
+{% extends 'base.j2' %}
+
+{% from "components/paginator.j2" import links as paginator_links %}
+{% import "components/color.j2" as color %}
+{% from "components/icons.j2" import bl_icon, bo_icon %}
+
+{% block content %}
+
+<div class="container-fluid pt-3">
+    <div>
+        <button class="btn btn-secondary float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filter">
+            Filter
+        </button>
+    </div>
+
+    <div class="row">
+    <div class="col">
+    <div id="filterCollapse" class="container collapse pt-3">
+        <form method="GET" action="{{ url_for('inventory.items') }}">
+            <input type="hidden" name="page" value="{{ paginator.get_current_page() }}">
+
+            <div class="mb-3">
+                <label>Colors</label>
+                <select class="mb-3 form-select" name="colors" multiple>
+                    {% for color in colors %}
+                        <option value="{{ color.id }}" {{ 'selected' if color.id in search_params['colors'] else '' }}>{{ color.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="row mb-3">
+                <label class="form-label col">Condition</label>
+                <div class="d-flex col">
+                    <div class="form-check pe-3">
+                        <input class="form-check-input" type="checkbox" name='conditions' value="N" {{ 'checked' if 'N' in search_params['conditions'] else '' }}>
+                        <label class="form-check-label">N</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name='conditions' value="U" {{ 'checked' if 'U' in search_params['conditions'] else '' }}>
+                        <label class="form-check-label">U</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="form-label col">Price</label>
+                <div class="input-group input-group-sm col">
+                    <input type="number" name="price_min" class="form-control" placeholder="Min" step="0.01" min="0" value="{{ search_params['price_min'] or '' }}">
+                    <input type="number" name="price_max" class="form-control" placeholder="Max" step="0.01" min="0" value="{{ search_params['price_max'] or '' }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="form-label col">Quantity</label>
+                <div class="input-group input-group-sm col">
+                    <input type="number" name="quantity_min" class="form-control" placeholder="Min" step="1" min="0" value="{{ search_params['quantity_min'] or '' }}">
+                    <input type="number" name="quantity_max" class="form-control" placeholder="Max" step="1" min="0" value="{{ search_params['quantity_max'] or '' }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label>Remarks</label>
+                <input class="form-control form-control-sm" type="text" name="user_remarks" value="{{ search_params['user_remarks'] or '' }}">
+            </div>
+            
+            <div class="mb-3">
+                <label>Description</label>
+                <input class="form-control form-control-sm" type="text" name="user_description" value="{{ search_params['user_description'] or '' }}">
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">
+                    Apply
+                </button>
+                </div>
+        </form>
+    </div>
+    </div>
+    </div>
+
+    <div class="mt-3 mb-3">
+        {{ paginator_links(paginator) }}
+    </div>
+
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Item type</th>
+            <th>Item name</th>
+            <th>Item image</th>
+            <th>Category ID</th>
+            <th>BOID</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.type }}</td>
+            <td>{{ item.name }}</td>
+            <!-- Item image -->
+            <td class="text-center">
+                <img class="part-img" src="{{ get_item_image_url(item.type, 0, item.id) }}">
+            </td>
+            <td>{{ item.category.name }} ({{ item.category.id }})</td>
+            <td>
+                {% if item.bo_id != none %}
+                    {{ bo_icon(item.bo_id, "https://www.brickowl.com/search/catalog?query=" ~ item.bo_id) }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+
+    <div class="mb-3">
+        {{ paginator_links(paginator) }}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.j2' %}
+
+{% from "components/paginator.j2" import links as paginator_links %}
+{% import "components/color.j2" as color %}
+{% from "components/icons.j2" import bl_icon, bo_icon %}
+
+{% block content %}
+
+<div class="container-fluid pt-3">
+    <div class="mt-3 mb-3">
+        {{ paginator_links(paginator) }}
+    </div>
+
+    <table class="table table-sm">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>RGB</th>
+            <th>Type</th>
+            <th>BOID</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for color in colors %}
+        <tr>
+            <td>{{ color.id }}</td>
+            <td>{{ color.name }}</td>
+            <td>
+                {% if color.rgb %}
+                    {{ color.rgb }}
+                    <div style="display: inline-block; width: 15px; height: 15px; background-color: #{{ color.rgb }}; border: 1px solid black">&nbsp;</div>
+                {% endif %}
+            </td>
+            <td>{{ color.type }}</td>
+            <td>
+                {% if color.bo_id != none %}
+                    {{ bo_icon(color.bo_id) }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+
+    <div class="mb-3">
+        {{ paginator_links(paginator) }}
+    </div>
+</div>
+
+{% endblock %}

@@ -154,6 +154,8 @@ class Item(Base):
 
     bo_id = sa.Column(sa.Integer)
 
+    category = relationship('Category')
+
     __table_args__ = (
         sa.PrimaryKeyConstraint('id', 'type'),
     )
