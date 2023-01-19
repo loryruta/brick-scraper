@@ -101,8 +101,8 @@
     <tbody>
         {% for item in items %}
             <tr class="align-middle">
-                <th>{{ item.id }}</th> <!-- Lot ID -->
-                <th>{{ item.item_type }}</th> <!-- Item type -->
+                <td>{{ item.id }}</td> <!-- Lot ID -->
+                <td>{{ item.item_type }}</td> <!-- Item type -->
 
                 <td class="text-center"> <!-- Item image -->
                     <img class="item-img" src="{{ get_item_image_url(item.item_type, item.color_id, item.item_id) }}">
