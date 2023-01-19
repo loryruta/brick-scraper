@@ -3,7 +3,6 @@ from db import Session
 from models import User, InventoryItem
 from routes.auth import auth_request
 from backends.bricklink import Bricklink, parse_bricklink_item_type
-import json
 
 
 blueprint = Blueprint('partout', __name__)
@@ -66,7 +65,7 @@ def add_to_inventory():
                 condition=condition,
                 unit_price=None,
                 quantity=entry['quantity'],
-                user_remarks=set_no,
+                user_remarks=entry['item']['no'],
                 user_description=''
             )
             for entry in set_entries
