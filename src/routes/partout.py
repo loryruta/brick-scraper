@@ -79,4 +79,4 @@ def add_to_inventory():
 
         print(f"Inventory items {len(inventory_items)}")
 
-    return redirect(url_for('inventory.items'))
+    return redirect(url_for('inventory.show'))

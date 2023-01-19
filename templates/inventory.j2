@@ -16,7 +16,7 @@
     <div class="row">
     <div class="col">
     <div id="filterCollapse" class="container collapse pt-3">
-        <form method="GET" action="{{ url_for('inventory.items') }}">
+        <form method="GET" action="{{ url_for('inventory.show') }}">
             <input type="hidden" name="page" value="{{ paginator.get_current_page() }}">
 
             <div class="mb-3">

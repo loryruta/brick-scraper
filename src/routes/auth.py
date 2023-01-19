@@ -146,7 +146,7 @@ def login():
 
             if user:
                 if bcrypt.checkpw(password.encode(), user.password_hash.encode('utf-8')):
-                    response = redirect(url_for('inventory.items'))
+                    response = redirect(url_for('inventory.show'))
                     set_authorization_cookie(response, user)
                     return response
                 else:

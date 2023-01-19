@@ -16,9 +16,9 @@ import models
 blueprint = Blueprint('inventory', __name__)
 
 
-@blueprint.route('/inventory/items', methods=['GET'])
+@blueprint.route('/inventory', methods=['GET'])
 @auth_request
-def items():
+def show():
     with Session.begin() as session:
         colors = session.query(Color) \
             .order_by(Color.name.asc()) \
@@ -75,7 +75,7 @@ def items():
         paginator = Paginator(get_query)
         items = paginator.paginate()
 
-        return render_template('inventory/items.j2',
+        return render_template('inventory.j2',
             items=items,
             colors=colors,
             paginator=paginator,
