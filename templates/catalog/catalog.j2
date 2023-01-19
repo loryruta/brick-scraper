@@ -88,7 +88,7 @@
             <th>ID</th>
             <th>Item type</th>
             <th>Item name</th>
-            <th>Item image</th>
+            <!--<th>Item image</th>-->
             <th>Category ID</th>
             <th>BOID</th>
         </tr>
@@ -99,10 +99,10 @@
             <td>{{ item.id }}</td>
             <td>{{ item.type }}</td>
             <td>{{ item.name }}</td>
-            <!-- Item image -->
+            <!-- Item image 
             <td class="text-center">
-                <img class="part-img" src="{{ get_item_image_url(item.type, 0, item.id) }}">
-            </td>
+                <img class="item-img" src="{{ get_item_image_url(item.type, 0, item.id) }}">
+            </td>-->
             <td>{{ item.category.name }} ({{ item.category.id }})</td>
             <td>
                 {% if item.bo_id != none %}
