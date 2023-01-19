@@ -1,0 +1,105 @@
+{% extends 'base.j2' %}
+
+{% from "components/paginator.j2" import links as paginator_links %}
+{% import "components/color.j2" as color %}
+{% from "components/icons.j2" import bl_icon, bo_icon %}
+
+{% block content %}
+
+<div class="container">
+    <!-- ------------------------------------------------------------------------------------------------ -->
+    <!-- Input form -->
+    <!-- ------------------------------------------------------------------------------------------------ -->
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <form method="GET">
+                    <div class="row mt-3">
+                        <div class="form-group col">
+                            <label>Set No.</label>
+                            <input name="set_no" class="form-control" value="{{ request.args['set_no'] }}" />
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col text-center">
+                            <button type="submit" class="btn btn-primary">Part out</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% if result %}
+                <div class="col-2">
+                    <img style="max-width: 100%" src="{{ get_item_image_url('set', 0, request.args['set_no']) }}">
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------------------------------ -->
+    <!-- Result -->
+    <!-- ------------------------------------------------------------------------------------------------ -->
+
+    {% if result %}
+        <hr>
+
+        <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Item NO.</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Category ID</th>
+                <th>Image</th>
+                <th>Color ID</th>
+                <th>Quantity</th>
+                <th>Extra quantity</th>
+                <th>Is alternate</th>
+                <th>Is counterpart</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in result %}
+            <tr>
+                <td>{{ entry['item']['no'] }}</td>
+                <td>{{ entry['item']['name'] }}</td>
+                <td>{{ entry['item']['type'] }}</td>
+                <td>{{ entry['item']['categoryID'] }}</td>
+
+                <!-- Item image -->
+                <td class="text-center">
+                    <img style="max-height: 30px" src="{{ get_item_image_url(
+                        parse_bricklink_item_type(entry['item']['type']),
+                        entry['color_id'],
+                        entry['item']['no']
+                    ) }}">
+                </td>
+
+                <td>{{ entry['color_id'] }}</td>
+                <td>{{ entry['quantity'] }}</td>
+                <td>{{ entry['extra_quantity'] }}</td>
+                <td>{{ entry['is_alternate'] }}</td>
+                <td>{{ entry['is_counterpart'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+    {% endif %}
+
+    <!-- ------------------------------------------------------------------------------------------------ -->
+
+    {% if result %}
+        <hr>
+
+        <form method="POST">
+            <div class="row mt-3">
+                <div class="col text-center">
+                    <button type="submit" class="btn btn-primary">Add to inventory</button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -18,7 +18,7 @@ log.setLevel(logging.WARNING)
 
 
 import os
-from flask import Flask, g
+from flask import Flask, g, Blueprint
 
 
 app = Flask(__name__,
@@ -33,7 +33,10 @@ from routes.inventory import blueprint as inventory_blueprint
 from routes.orders import blueprint as orders_blueprint
 from routes.user import blueprint as user_blueprint
 from routes.catalog import blueprint as catalog_blueprint
+from routes.partout import blueprint as partout_blueprint
+
 import image_storage
+from backends.bricklink import parse_bricklink_item_type
 
 
 @app.route('/', methods=['GET'])
@@ -47,6 +50,10 @@ app.register_blueprint(inventory_blueprint)
 app.register_blueprint(orders_blueprint)
 app.register_blueprint(user_blueprint)
 app.register_blueprint(catalog_blueprint)
+app.register_blueprint(partout_blueprint)
+
+storage_blueprint = Blueprint('storage', __name__, static_url_path='/public/storage/', static_folder='storage')
+app.register_blueprint(storage_blueprint)
 
 
 @app.context_processor
@@ -61,11 +68,10 @@ def env():
       return globals
 
 
-@app.context_processor
-def get_item_image_url():
-      def _get_item_image_url(item_type: str, color_id: str, item_id: str):
-            return image_storage.get_item_storage_url(item_type, color_id, item_id)
-      return dict(get_item_image_url=_get_item_image_url)
+app.jinja_env.globals.update(
+      get_item_image_url=image_storage.get_item_image_url,
+      parse_bricklink_item_type=parse_bricklink_item_type
+)
 
 
 if __name__ == '__main__':

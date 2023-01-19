@@ -34,18 +34,17 @@ footer {
 footer.developed-by {
 }
 
-th {
-    text-transform: uppercase;
-    font-weight: 400;
-}
-
 th, td {
     vertical-align: middle;
 }
 
 table.inventory-parts td img.part-img {
+    max-height: 100%;
+}
+
+img.item-img {
     max-height: 100px;
-    width: 50px
+    width: 50px;
 }
 
 table.op-table tr.processed {

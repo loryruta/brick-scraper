@@ -10,6 +10,14 @@ class InvalidRequest(Exception):
     pass
 
 
+def parse_bricklink_item_type(item_type: str) -> str:
+    return {
+        'PART': 'part',
+        'SET': 'set',
+        'MINIFIG': 'minifig'
+    }[item_type]
+
+
 class Bricklink:
     def __init__(self, customer_key: str, customer_secret: str, token_value: str, token_secret: str):
         self.customer_key = customer_key 
