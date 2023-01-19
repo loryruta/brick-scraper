@@ -24,9 +24,6 @@ def partout(set_no: str):
 
         subsets = bricklink.get_subsets(item_type='set', item_no=set_no)
 
-        with open("subsets.json", "wt") as f:
-            f.write(json.dumps(subsets))
-
         result = []
         for subset in subsets:
             result += subset['entries']
@@ -76,7 +73,5 @@ def add_to_inventory():
         ]
         session.bulk_save_objects(inventory_items)
         session.commit()
-
-        print(f"Inventory items {len(inventory_items)}")
 
     return redirect(url_for('inventory.show'))
