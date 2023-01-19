@@ -245,7 +245,7 @@ class InventoryItem(Base):
     color_id = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False, default=0)
 
     condition = sa.Column(sa.String(1), nullable=False, default='U')
-    unit_price = sa.Column(sa.Float, nullable=False)
+    unit_price = sa.Column(sa.Float, nullable=True)
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
     user_remarks = sa.Column(sa.String, nullable=False, default='')
     user_description = sa.Column(sa.String, nullable=False, default='')
@@ -257,6 +257,5 @@ class InventoryItem(Base):
     user = relationship("User")
 
     __table_args__ = (
-        sa.UniqueConstraint('user_id', 'item_id', 'item_type', 'color_id', 'condition', 'user_remarks'),
         sa.ForeignKeyConstraint(['item_id', 'item_type'], ['items.id', 'items.type']),
     )

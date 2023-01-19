@@ -105,7 +105,7 @@
                 <th>{{ item.item_type }}</th> <!-- Item type -->
 
                 <td class="text-center"> <!-- Item image -->
-                    <img class="part-img" src="{{ get_item_image_url(item.item_type, item.color_id, item.item_id) }}">
+                    <img class="item-img" src="{{ get_item_image_url(item.item_type, item.color_id, item.item_id) }}">
                 </td>
 
                 <!-- Item ID -->
@@ -146,12 +146,10 @@
                     {% endif %}
                 </td>
                 <td>{{ item.condition }}</td>
-                <td>{{ item.unit_price }}</td>
+                <td>{{ item.unit_price if item.unit_price else '-' }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.user_remarks if item.user_remarks else "-" }}</td>
-                <td>
-                    {{ item.user_description if item.user_description else "-" }}
-                </td>
+                <td>{{ item.user_description if item.user_description else "-" }}</td>
             </tr>
         {% endfor %}
     </tbody>
