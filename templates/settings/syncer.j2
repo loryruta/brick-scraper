@@ -20,7 +20,7 @@
     </div>
 
     <div class="text-md-start text-sm-center">
-        <form method="POST" action="{{ url_for('user.settings.stop_syncer') if user.is_syncer_enabled else url_for('user.settings.start_syncer')  }}">
+        <form method="POST" action="{{ url_for('settings.stop_syncer') if user.is_syncer_enabled else url_for('settings.start_syncer')  }}">
             <div>
                 <button class="btn {{ 'btn-danger' if user.is_syncer_enabled else 'btn-success' }}">
                     {{ "Stop syncer" if user.is_syncer_enabled else "Start syncer" }}

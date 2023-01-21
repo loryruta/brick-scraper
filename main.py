@@ -34,6 +34,7 @@ from routes.orders import blueprint as orders_blueprint
 from routes.user import blueprint as user_blueprint
 from routes.catalog import blueprint as catalog_blueprint
 from routes.partout import blueprint as partout_blueprint
+from routes.settings import blueprint as settings_blueprint
 
 import image_storage
 from backends.bricklink import parse_bricklink_item_type
@@ -51,6 +52,7 @@ app.register_blueprint(orders_blueprint)
 app.register_blueprint(user_blueprint)
 app.register_blueprint(catalog_blueprint)
 app.register_blueprint(partout_blueprint)
+app.register_blueprint(settings_blueprint)
 
 storage_blueprint = Blueprint('storage', __name__, static_url_path='/public/storage/', static_folder='storage')
 app.register_blueprint(storage_blueprint)

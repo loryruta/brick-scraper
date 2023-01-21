@@ -29,7 +29,7 @@ def require_remote_keys(f):
             if user.bl_credentials_approved and user.bo_credentials_approved:
                 return current_app.ensure_sync(f)(*args, **kwargs)
             else:
-                return redirect(url_for('user.settings.view'))
+                return redirect(url_for('settings.view'))
     return wrapper
 
 
@@ -90,7 +90,7 @@ def set_stores():
         except BrickowlInvalidRequest as _:
             pass
 
-    return redirect(url_for("user.settings.view"))
+    return redirect(url_for("settings.view"))
 
 
 @blueprint.route('/settings/syncer/toggle', methods=['POST'])
@@ -103,7 +103,7 @@ def toggle_syncer():
 
         if not (user.bl_credentials_approved and user.bo_credentials_approved):
             flash(json.dumps({ 'backends': { 'submit': 'Backends not approved.' }}))
-            return redirect(url_for('user.settings.view'))
+            return redirect(url_for('settings.view'))
 
         should_enable = not user.syncer_enabled
         antiflood_interval = 2  # In seconds
@@ -122,7 +122,7 @@ def toggle_syncer():
             user.syncer_enabled = False
             syncer.stop(user)
 
-    return redirect(url_for("user.settings.view"))
+    return redirect(url_for("settings.view"))
 
 
 @blueprint.route('/settings/syncer/start', methods=['POST'])
@@ -132,7 +132,7 @@ def start_syncer():
         
         syncer.start(session, g.user_id)
 
-        return redirect(url_for('user.settings.view'))
+        return redirect(url_for('settings.view'))
 
 
 @blueprint.route('/settings/syncer/stop', methods=['POST'])
@@ -142,5 +142,8 @@ def stop_syncer():
 
         syncer.stop(session, g.user_id)
 
-        return redirect(url_for('user.settings.view'))
+        return redirect(url_for('settings.view'))
+
+
+
 

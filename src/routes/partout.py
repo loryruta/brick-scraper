@@ -14,13 +14,7 @@ def partout(set_no: str):
             .filter_by(id=g.user_id) \
             .first()
 
-        bricklink = Bricklink(
-            user.bl_customer_key,
-            user.bl_customer_secret,
-            user.bl_token_value,
-            user.bl_token_secret
-        )
-
+        bricklink = Bricklink.from_user(user)
         subsets = bricklink.get_subsets(item_type='set', item_no=set_no)
 
         result = []
