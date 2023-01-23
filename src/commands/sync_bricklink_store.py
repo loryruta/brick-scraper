@@ -1,9 +1,11 @@
 """
-Command that should be run when the SYNC activity starts.
+Command that should run:
+    - When the SYNC activity starts in order to make sure the local items are present in the remote Bricklink's store before
+      issuing the delta updates when the orders are received.
+    - Periodically (e.g. every hour), to push possible price changes and, in general, ensure correct synchronization.
 
-Get the differences between the local and the remote Bricklink store and
-upload the differences to the Bricklink store to ensure it has AT LEAST the local
-inventory items.
+Get the differences between the local and the remote Bricklink store and upload the differences to the Bricklink store to ensure
+it has *at least* the local inventory items.
 """
 
 
@@ -14,9 +16,12 @@ from db import Session
 from models import InventoryItem
 from math import ceil
 from typing import List, Optional
+import time
+from datetime import datetime
 
 
 BATCH_SIZE = 100
+MAX_ELAPSED_TIME = 40 * 60  # 40 minutes
 
 
 bricklink = Bricklink.from_supervisor()
@@ -47,7 +52,7 @@ def is_different(inventory_item: InventoryItem, remote_inventory_item: StoreInve
     return result
 
 
-async def create_inventory_item(inventory_item: InventoryItem):
+def create_inventory_item(inventory_item: InventoryItem):
     # https://www.bricklink.com/v3/api.page?page=create-inventory
     bricklink.create_store_inventories(store_inventory_resources=[{
         'item': {
@@ -75,7 +80,7 @@ async def create_inventory_item(inventory_item: InventoryItem):
     }])
 
 
-async def update_inventory_item(inventory_item: InventoryItem, remote_item_id: int):
+def update_inventory_item(inventory_item: InventoryItem, remote_item_id: int):
     # https://www.bricklink.com/v3/api.page?page=update-inventory
     bricklink.update_store_inventory(remote_item_id, store_inventory_resource={
         'quantity': inventory_item.quantity,
@@ -97,14 +102,21 @@ async def update_inventory_item(inventory_item: InventoryItem, remote_item_id: i
 
 
 async def run():
+    started_at = time.time()
+
     remote_inventory = bricklink.get_store_inventories()
 
     session = Session()
-    inventory_items: List[InventoryItem] = session.query(InventoryItem).all()
-
-    tasks = []
+    inventory_items: List[InventoryItem] = \
+        session.query(InventoryItem) \
+            .order_by(InventoryItem.bl_synced_at.asc()) \
+            .all()
 
     for item in inventory_items:
+        if (time.time() - started_at) >= MAX_ELAPSED_TIME:
+            print(f"Max elapsed time reached")
+            return
+
         print(f"Item {item.item_id} ({item.item_type}) {item.color.name}", end='')
 
         if not item.is_valid_for_bricklink():
@@ -124,8 +136,7 @@ async def run():
 
             print(f" -> CREATE")
 
-            task = asyncio.create_task(create_inventory_item(item))
-            tasks += [task]
+            create_inventory_item(item)
         else:
             # If more than a remote item matches (e.g. different description), keep the item whose inventory_id is less
             matching_remote_items.sort(key=lambda x: x['inventory_id'])
@@ -140,10 +151,8 @@ async def run():
                     f"user_description: \"{item.user_description}\"/\"{matching_remote_item['description']}\""
                 ")")
 
-                task = asyncio.create_task(update_inventory_item(item, matching_remote_item['inventory_id']))
-                tasks += [task]
+                update_inventory_item(item, matching_remote_item['inventory_id'])
             else:
                 print('')  # Nothing to do!
-
-    if tasks:
-        await asyncio.wait(tasks)
+        
+        item.bl_synced_at = datetime.now()

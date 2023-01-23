@@ -276,6 +276,8 @@ class InventoryItem(Base):
 
     image_pulled = sa.Column(sa.Integer)
 
+    bl_synced_at = sa.Column(sa.DateTime, nullable=True)
+
     item = relationship('Item')
     color = relationship("Color")
     user = relationship("User")
