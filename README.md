@@ -17,7 +17,7 @@ You can then connect to the web service at `localhost:5000`.
 
 ```
 docker-compose up -d db
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml -d up app
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d app
 docker-compose exec app bash
 ```
 
