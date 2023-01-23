@@ -16,7 +16,6 @@ RUN pip install -r requirements.txt && \
     npm install
 
 RUN crontab -l | { cat; echo "*/10 * * * * python3 /usr/app/src/pull_catalog.py"; } | crontab -
-RUN crontab -l | { cat; echo "*/10 * * * * python3 /usr/app/src/pull_inventory_images.py"; } | crontab -
 RUN crontab -l | { cat; echo "*/10 * * * * python3 /usr/app/src/pull_orders.py"; } | crontab -
 
 ENTRYPOINT alembic upgrade head && \
