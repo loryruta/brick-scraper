@@ -291,7 +291,6 @@ class OrderPuller:
 
 
     def pull_orders(self):
-        asyncio.run
         self.pull_bl_orders()
         self.pull_bo_orders()
 

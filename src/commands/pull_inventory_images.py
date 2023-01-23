@@ -1,7 +1,12 @@
+
+"""
+Command used to download images from Bricklink website and put them in a cache folder.
+
+TODO not used anymore, directly referencing to Bricklink URLs for visualization.
+"""
+
+
 from dotenv import load_dotenv
-
-
-# TODO Not used anymore
 
 
 load_dotenv()
