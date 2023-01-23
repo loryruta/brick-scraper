@@ -2,7 +2,8 @@
 """
 Command that should run periodically.
 
-Pull prices from the Bricklink API for the items in the inventory.
+Get the items of the inventory for which a price hasn't been set yet (e.g. they have just been parted out).
+Search for their price in the local catalog cache, if the price isn't found, send a request to the Bricklink API. 
 """
 
 
@@ -11,12 +12,18 @@ from models import InventoryItem, ItemPrice
 from backends.bricklink import Bricklink
 from typing import List, Optional
 from datetime import datetime
+import time
+
+
+MAX_ELAPSED_TIME = 5 * 60  # 5 minutes
 
 
 bricklink = Bricklink.from_supervisor()
 
 
 async def run():
+    started_at = time.time()
+
     session = Session()
     inventory_items: List[InventoryItem] = \
         session.query(InventoryItem) \
@@ -24,6 +31,10 @@ async def run():
             .all()
 
     for inventory_item in inventory_items:
+        if (time.time() - started_at) >= MAX_ELAPSED_TIME:
+            print(f"Max elapsed time reached")
+            return
+
         if inventory_item.unit_price == None:
             print(f"Item {inventory_item.item_id} ({inventory_item.item_type}) {inventory_item.color.name}", end='')
 
