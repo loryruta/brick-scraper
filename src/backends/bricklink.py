@@ -2,8 +2,9 @@ import requests
 from requests_oauthlib import OAuth1
 import os
 import json
-
+from typing import List
 from models import User
+from backends.bricklink_types import StoreInventory
 
 
 class InvalidRequest(Exception):
@@ -16,6 +17,10 @@ def parse_bricklink_item_type(item_type: str) -> str:
         'SET': 'set',
         'MINIFIG': 'minifig'
     }[item_type]
+
+
+def to_bricklink_item_type(item_type: str) -> str:
+    return { 'part': 'PART', 'set': 'SET', 'minifig': 'MINIFIG' }[item_type] 
 
 
 class Bricklink:
@@ -72,7 +77,7 @@ class Bricklink:
         return self.send_request('GET', f"items/{item_type}/{item_no}/subsets")
 
 
-    def get_store_inventories(self):
+    def get_store_inventories(self) -> List[StoreInventory]:
         return self.send_request('GET', f'inventories')
 
 
@@ -80,7 +85,7 @@ class Bricklink:
         return self.send_request('GET', f'inventories/{inventory_id}')
 
 
-    def create_store_inventories(self, store_inventory_resources):
+    def create_store_inventories(self, store_inventory_resources: List[StoreInventory]):
         return self.send_request('POST', f'inventories', json=store_inventory_resources)
 
 
@@ -103,5 +108,15 @@ class Bricklink:
             user.bl_customer_secret,
             user.bl_token_value,
             user.bl_token_secret
+        )
+
+    
+    @staticmethod
+    def from_supervisor():
+        return Bricklink(
+            os.environ["SUPERVISOR_BRICKLINK_CONSUMER_KEY"],
+            os.environ["SUPERVISOR_BRICKLINK_CONSUMER_SECRET"],
+            os.environ["SUPERVISOR_BRICKLINK_TOKEN_VALUE"],
+            os.environ["SUPERVISOR_BRICKLINK_TOKEN_SECRET"]
         )
 

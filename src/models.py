@@ -259,3 +259,14 @@ class InventoryItem(Base):
     __table_args__ = (
         sa.ForeignKeyConstraint(['item_id', 'item_type'], ['items.id', 'items.type']),
     )
+
+    
+    def is_valid_for_bricklink(self):
+        return \
+            self.unit_price is not None
+
+
+    def is_valid_for_brickowl(self):
+        return \
+            self.unit_price is not None and \
+            self.item.bo_id is not None

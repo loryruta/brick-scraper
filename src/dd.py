@@ -1,14 +1,18 @@
 from backends.bricklink import Bricklink
-import os
 import json
+import asyncio
+from commands import sync_bricklink_store
+
+
+def bricklink_dump():
+    bricklink = Bricklink.from_supervisor()
+    with open("test.json", "wt") as f:
+        f.write(json.dumps(bricklink.get_store_inventories()))
+
+
+def run_command():
+    asyncio.run(sync_bricklink_store.run())
 
 
 if __name__ == "__main__":
-    bricklink = Bricklink(
-        os.environ["SUPERVISOR_BRICKLINK_CONSUMER_KEY"],
-        os.environ["SUPERVISOR_BRICKLINK_CONSUMER_SECRET"],
-        os.environ["SUPERVISOR_BRICKLINK_TOKEN_VALUE"],
-        os.environ["SUPERVISOR_BRICKLINK_TOKEN_SECRET"]
-    )
-    with open("test.json", "wt") as f:
-        f.write(json.dumps(bricklink.get_inventories()))
+    run_command()
