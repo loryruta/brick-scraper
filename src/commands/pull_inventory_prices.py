@@ -1,6 +1,6 @@
 
 """
-Command that should run periodically.
+Command that should run periodically (e.g. every 10 minutes).
 
 Get the items of the inventory for which a price hasn't been set yet (e.g. they have just been parted out).
 Search for their price in the local catalog cache, if the price isn't found, send a request to the Bricklink API. 

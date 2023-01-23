@@ -20,8 +20,8 @@ import time
 from datetime import datetime
 
 
-BATCH_SIZE = 100
 MAX_ELAPSED_TIME = 40 * 60  # 40 minutes
+BATCH_SIZE = 100
 
 
 bricklink = Bricklink.from_supervisor()
