@@ -144,6 +144,25 @@ class Category(Base):
     name = sa.Column(sa.String, nullable=False)
 
 
+class ItemPrice(Base):
+    __tablename__ = 'item_prices'
+
+    item_id = sa.Column(sa.String)
+    item_type = sa.Column(sa.String)
+    color_id = sa.Column(sa.Integer)
+    condition = sa.Column(sa.String)
+
+    min_price = sa.Column(sa.Numeric, nullable=True)
+    avg_price = sa.Column(sa.Numeric, nullable=True)
+    max_price = sa.Column(sa.Numeric, nullable=True)
+
+    updated_at = sa.Column(sa.DateTime, nullable=True)
+    
+    __table_args__ = (
+        sa.PrimaryKeyConstraint('item_id', 'item_type', 'color_id', 'condition'),
+    )
+
+
 class Item(Base):
     __tablename__ = 'items'
 
@@ -159,6 +178,11 @@ class Item(Base):
     __table_args__ = (
         sa.PrimaryKeyConstraint('id', 'type'),
     )
+    
+    prices = relationship(ItemPrice, primaryjoin="and_( \
+        Item.id == foreign(ItemPrice.item_id), \
+        Item.type == foreign(ItemPrice.item_type) \
+    )")
 
 
 class OrderStatus(Enum):
@@ -245,7 +269,7 @@ class InventoryItem(Base):
     color_id = sa.Column(sa.Integer, sa.ForeignKey('colors.id'), nullable=False, default=0)
 
     condition = sa.Column(sa.String(1), nullable=False, default='U')
-    unit_price = sa.Column(sa.Float, nullable=True)
+    unit_price = sa.Column(sa.Numeric, nullable=True)
     quantity = sa.Column(sa.Integer, nullable=False, default=0)
     user_remarks = sa.Column(sa.String, nullable=False, default='')
     user_description = sa.Column(sa.String, nullable=False, default='')

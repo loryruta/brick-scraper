@@ -97,8 +97,8 @@ class Bricklink:
         return self.send_request('DELETE', f'inventories/{inventory_id}')
 
 
-    def get_price_guide(self, type: str, no: str):
-        return self.send_request('GET', f'items/{type}/{no}/price')
+    def get_price_guide(self, type: str, no: str, params):
+        return self.send_request('GET', f'items/{type}/{no}/price', params=params)
 
 
     @staticmethod
