@@ -26,7 +26,7 @@ class Bricklink:
         self.token_secret = token_secret
 
 
-    def _make_request(self, method, path, params):
+    def send_request(self, method: str, path: str, **kwargs):
         endpoint = os.environ['BRICKLINK_ENDPOINT']
         auth = OAuth1(
             self.customer_key,
@@ -37,7 +37,7 @@ class Bricklink:
 
         url = f"{endpoint}/{path}"
 
-        response = requests.request(method, url, auth=auth, params=params)
+        response = requests.request(method, url, auth=auth, **kwargs)
 
         if response.status_code != 200:
             raise InvalidRequest("HTTP request failed with status code: " + str(r.status_code))
@@ -53,31 +53,47 @@ class Bricklink:
 
 
     def get_colors(self):
-        return self._make_request("GET", "colors", {})
+        return self.send_request("GET", "colors")
 
 
     def get_orders(self):
-        return self._make_request("GET", "orders", {})
+        return self.send_request("GET", "orders")
 
 
     def get_order_items(self, order_id: str):
-        return self._make_request("GET", f"orders/{order_id}/items", {})
+        return self.send_request("GET", f"orders/{order_id}/items")
 
 
     def get_order(self, order_id: str):
-        return self._make_request("GET", f"orders/{order_id}", {})
+        return self.send_request("GET", f"orders/{order_id}")
 
 
     def get_subsets(self, item_type: str, item_no: str):
-        return self._make_request('GET', f"items/{item_type}/{item_no}/subsets", {})
+        return self.send_request('GET', f"items/{item_type}/{item_no}/subsets")
 
 
-    def get_inventories(self):
-        return self._make_request('GET', f'inventories', {})
+    def get_store_inventories(self):
+        return self.send_request('GET', f'inventories')
 
 
-    def get_inventory(self, inventory_id: str):
-        return self._make_request('GET', f'inventories/{inventory_id}', {})
+    def get_store_inventory(self, inventory_id: str):
+        return self.send_request('GET', f'inventories/{inventory_id}')
+
+
+    def create_store_inventories(self, store_inventory_resources):
+        return self.send_request('POST', f'inventories', json=store_inventory_resources)
+
+
+    def update_store_inventory(self, inventory_id: int, store_inventory_resource):
+        return self.send_request('PUT', f'inventories/{inventory_id}', json=store_inventory_resource)
+
+
+    def delete_store_inventory(self, inventory_id: int):
+        return self.send_request('DELETE', f'inventories/{inventory_id}')
+
+
+    def get_price_guide(self, type: str, no: str):
+        return self.send_request('GET', f'items/{type}/{no}/price')
 
 
     @staticmethod

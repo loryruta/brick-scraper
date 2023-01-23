@@ -1,5 +1,4 @@
 from typing import Dict
-from enum import Enum
 from dotenv import load_dotenv
 
 
@@ -299,9 +298,7 @@ class OrderPuller:
 
 if __name__ == "__main__":
     with Session.begin() as session:
-        users = session.query(User).all()
+        user = session.query(User).first()  # TODO brick-scraper should manage just one user!
 
-        for user in users:
-            order_puller = OrderPuller(user.id)
-            order_puller.pull_orders()
-
+        order_puller = OrderPuller(user.id)
+        order_puller.pull_orders()
