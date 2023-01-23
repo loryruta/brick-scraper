@@ -11,8 +11,9 @@ __pycache__
 node_modules
 
 # Project
-*.db
-*.db-journal
-.env
-storage
-public
+/*.db
+/*.db-journal
+/.env
+/storage
+/public
+/dump.json
